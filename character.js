@@ -1,3 +1,28 @@
+// シマウマ用の縞模様テクスチャを生成
+function createZebraTexture() {
+	const size = 128;
+	const canvas = document.createElement('canvas');
+	canvas.width = size;
+	canvas.height = size;
+	const ctx = canvas.getContext('2d');
+	// 白背景
+	ctx.fillStyle = '#fff';
+	ctx.fillRect(0, 0, size, size);
+	// 黒い縞
+	ctx.strokeStyle = '#000';
+	ctx.lineWidth = 16;
+	for (let i = 0; i < 6; i++) {
+		ctx.beginPath();
+		ctx.moveTo(i * 24, 0);
+		ctx.lineTo(i * 16 + 32, size);
+		ctx.stroke();
+	}
+	const texture = new THREE.CanvasTexture(canvas);
+	texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+	texture.repeat.set(2, 1);
+	return texture;
+}
+
 // 4足歩行動物キャラクター作成用のクラス
 class Character {
 	constructor(scene, type, game) {
@@ -12,9 +37,9 @@ class Character {
 		this.animationTime=0;
 		this.isMoving=false;
 		this.isRunning=false;
-		this.animationSpeed=30.0;
+		this.animationSpeed=0.4; // アニメーション速度を遅くして自然な歩行に
 		this.walkAmplitude = 0.3;
-		this.legSwingAmplitude = 1.2;
+		this.legSwingAmplitude = 0.4;
 
 		// 移動関連の変数
 		this.position=new THREE.Vector3();
@@ -42,182 +67,275 @@ class Character {
 	}
 
 	createCharacter() {
-		// 動物の色を設定
-		const colorA = 0xffffff;
-		const colorB = 0xffffff;
+		// テクスチャ・色の共通処理
+		let mainMaterial, subMaterial;
+		if (this.type === 'animal' && this.game && this.game.animalType === 'シマウマ') {
+			const zebraTexture = createZebraTexture();
+			mainMaterial = new THREE.MeshStandardMaterial({ map: zebraTexture });
+			subMaterial = new THREE.MeshStandardMaterial({ map: zebraTexture });
+		} else {
+			mainMaterial = new THREE.MeshStandardMaterial({ color: this.color || 0xffffff });
+			subMaterial = new THREE.MeshStandardMaterial({ color: this.color || 0xffffff });
+		}
+
+		// 動物の種類に応じたサイズ調整
+		let bodyWidth = 1.5, bodyHeight = 0.8, bodyLength = 2.5;
+		let neckLength = 0.6, neckWidth = 0.4, neckHeight = 0.4;
+		let headWidth = 0.6, headHeight = 0.5, headLength = 0.8;
+		let legWidth = 0.2, legHeight = 0.8, legLength = 0.2;
+		let footWidth = 0.2, footHeight = 0.1, footLength = 0.3;
+		let tailLength = 0.8;
+
+		// 動物の種類に応じた形状調整
+		if (this.type === 'animal' && this.game) {
+			switch (this.game.animalType) {
+				case 'キリン':
+					// キリン：首をさらに長く、体を少し大きく
+					bodyWidth = 1.2; bodyHeight = 1.0; bodyLength = 2.8;
+					neckLength = 2.2; neckWidth = 0.25; neckHeight = 0.25;
+					headWidth = 0.4; headHeight = 0.5; headLength = 0.8;
+					legWidth = 0.25; legHeight = 1.4; legLength = 0.25;
+					footWidth = 0.25; footHeight = 0.15; footLength = 0.4;
+					tailLength = 1.0;
+					break;
+				case 'ゾウ':
+					// ゾウ：体を大きく、脚を太く、鼻を長く
+					bodyWidth = 2.2; bodyHeight = 1.3; bodyLength = 3.2;
+					neckLength = 0.3; neckWidth = 0.7; neckHeight = 0.6;
+					headWidth = 0.9; headHeight = 0.8; headLength = 1.2;
+					legWidth = 0.45; legHeight = 1.1; legLength = 0.45;
+					footWidth = 0.45; footHeight = 0.25; footLength = 0.6;
+					tailLength = 0.6;
+					break;
+				case 'シマウマ':
+					// シマウマ：体をさらに細く、脚を長く
+					bodyWidth = 0.8; bodyHeight = 0.6; bodyLength = 2.0;
+					neckLength = 0.6; neckWidth = 0.25; neckHeight = 0.25;
+					headWidth = 0.35; headHeight = 0.35; headLength = 0.6;
+					legWidth = 0.12; legHeight = 1.0; legLength = 0.12;
+					footWidth = 0.12; footHeight = 0.06; footLength = 0.2;
+					tailLength = 0.8;
+					break;
+				case 'ライオン':
+					// ライオン：筋肉質な体
+					bodyWidth = 1.4; bodyHeight = 0.9; bodyLength = 2.6;
+					neckLength = 0.5; neckWidth = 0.4; neckHeight = 0.4;
+					headWidth = 0.6; headHeight = 0.5; headLength = 0.8;
+					legWidth = 0.2; legHeight = 0.8; legLength = 0.2;
+					footWidth = 0.2; footHeight = 0.1; footLength = 0.3;
+					tailLength = 0.9;
+					break;
+				case 'ハイエナ':
+					// ハイエナ：少し小さめで筋肉質
+					bodyWidth = 1.1; bodyHeight = 0.7; bodyLength = 2.0;
+					neckLength = 0.4; neckWidth = 0.3; neckHeight = 0.3;
+					headWidth = 0.5; headHeight = 0.4; headLength = 0.7;
+					legWidth = 0.18; legHeight = 0.7; legLength = 0.18;
+					footWidth = 0.18; footHeight = 0.08; footLength = 0.25;
+					tailLength = 0.6;
+					break;
+				case 'ミーアキャット':
+					// ミーアキャット：小さくて細長い
+					bodyWidth = 0.4; bodyHeight = 0.3; bodyLength = 1.2;
+					neckLength = 0.2; neckWidth = 0.15; neckHeight = 0.15;
+					headWidth = 0.2; headHeight = 0.15; headLength = 0.3;
+					legWidth = 0.08; legHeight = 0.4; legLength = 0.08;
+					footWidth = 0.08; footHeight = 0.04; footLength = 0.12;
+					tailLength = 0.8;
+					break;
+				case 'トムソンガゼル':
+					// トムソンガゼル：小さくて細長い
+					bodyWidth = 0.5; bodyHeight = 0.4; bodyLength = 1.4;
+					neckLength = 0.3; neckWidth = 0.2; neckHeight = 0.2;
+					headWidth = 0.25; headHeight = 0.2; headLength = 0.4;
+					legWidth = 0.1; legHeight = 0.6; legLength = 0.1;
+					footWidth = 0.1; footHeight = 0.05; footLength = 0.15;
+					tailLength = 0.4;
+					break;
+			}
+		}
 
 		// ルートボーン（胴体の中心）
 		this.rootBone = new THREE.Bone();
-		this.rootBone.position.y = 1.0;
+		// キリンの場合は全体の高さを上げる
+		if (this.type === 'animal' && this.game && this.game.animalType === 'キリン') {
+			this.rootBone.position.y = 1.8;
+		} else {
+			this.rootBone.position.y = 1.0;
+		}
 
 		// 胴体ボーン
 		this.bodyBone = new THREE.Bone();
 		this.bodyBone.position.y = 0;
 		this.rootBone.add(this.bodyBone);
 
-		// 胴体メッシュ（線）
-		const bodyGeometry = new THREE.BoxGeometry(1.5, 0.8, 2.5);
-		const bodyEdges = new THREE.EdgesGeometry(bodyGeometry);
-		this.bodyMesh = new THREE.LineSegments(bodyEdges, new THREE.LineBasicMaterial({ color: colorA, linewidth: 2 }));
+		// 胴体メッシュ
+		const bodyGeometry = new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyLength);
+		this.bodyMesh = new THREE.Mesh(bodyGeometry, mainMaterial);
 		this.bodyMesh.position.y = 0;
 		this.bodyBone.add(this.bodyMesh);
 
 		// 首ボーン
 		this.neckBone = new THREE.Bone();
-		this.neckBone.position.set(0, 0.4, 1.2);
+		// キリンの場合は首の位置を高くする
+		if (this.type === 'animal' && this.game && this.game.animalType === 'キリン') {
+			this.neckBone.position.set(0, 0.6, bodyLength * 0.5);
+		} else {
+			this.neckBone.position.set(0, 0.4, bodyLength * 0.5);
+		}
 		this.bodyBone.add(this.neckBone);
 
-		// 首メッシュ（線）
-		const neckGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.6);
-		const neckEdges = new THREE.EdgesGeometry(neckGeometry);
-		this.neckMesh = new THREE.LineSegments(neckEdges, new THREE.LineBasicMaterial({ color: colorA, linewidth: 2 }));
+		// 首メッシュ
+		const neckGeometry = new THREE.BoxGeometry(neckWidth, neckHeight, neckLength);
+		this.neckMesh = new THREE.Mesh(neckGeometry, mainMaterial);
 		this.neckMesh.position.y = 0;
 		this.neckBone.add(this.neckMesh);
 
 		// 頭ボーン
 		this.headBone = new THREE.Bone();
-		this.headBone.position.set(0, 0, 0.5);
+		this.headBone.position.set(0, 0, neckLength * 0.5);
 		this.neckBone.add(this.headBone);
 
-		// 頭メッシュ（線）
-		const headGeometry = new THREE.BoxGeometry(0.6, 0.5, 0.8);
-		const headEdges = new THREE.EdgesGeometry(headGeometry);
-		this.headMesh = new THREE.LineSegments(headEdges, new THREE.LineBasicMaterial({ color: colorA, linewidth: 2 }));
+		// 頭メッシュ
+		const headGeometry = new THREE.BoxGeometry(headWidth, headHeight, headLength);
+		this.headMesh = new THREE.Mesh(headGeometry, mainMaterial);
 		this.headMesh.position.y = 0;
 		this.headBone.add(this.headMesh);
 
+		// ゾウの鼻を追加
+		if (this.type === 'animal' && this.game && this.game.animalType === 'ゾウ') {
+			this.trunkBone = new THREE.Bone();
+			this.trunkBone.position.set(0, -0.3, headLength * 0.5);
+			this.headBone.add(this.trunkBone);
+			
+			// より長く、曲がった鼻を作成
+			const trunkGeometry = new THREE.CylinderGeometry(0.08, 0.12, 1.8, 8);
+			this.trunkMesh = new THREE.Mesh(trunkGeometry, mainMaterial);
+			this.trunkMesh.position.y = 0;
+			this.trunkMesh.rotation.x = Math.PI / 2;
+			this.trunkMesh.rotation.z = Math.PI / 6; // 少し曲げる
+			this.trunkBone.add(this.trunkMesh);
+		}
+
 		// 前脚（左）
 		this.frontLeftShoulderBone = new THREE.Bone();
-		this.frontLeftShoulderBone.position.set(0.8, -0.2, 0.8);
+		this.frontLeftShoulderBone.position.set(bodyWidth * 0.5, -0.2, bodyLength * 0.3);
 		this.bodyBone.add(this.frontLeftShoulderBone);
 		
-		const frontLeftUpperLegGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
-		const frontLeftUpperLegEdges = new THREE.EdgesGeometry(frontLeftUpperLegGeometry);
-		this.frontLeftUpperLegMesh = new THREE.LineSegments(frontLeftUpperLegEdges, new THREE.LineBasicMaterial({ color: colorB, linewidth: 2 }));
-		this.frontLeftUpperLegMesh.position.y = -0.4;
+		const frontLeftUpperLegGeometry = new THREE.BoxGeometry(legWidth, legHeight, legLength);
+		this.frontLeftUpperLegMesh = new THREE.Mesh(frontLeftUpperLegGeometry, subMaterial);
+		this.frontLeftUpperLegMesh.position.y = -legHeight * 0.5;
 		this.frontLeftShoulderBone.add(this.frontLeftUpperLegMesh);
 		
 		this.frontLeftKneeBone = new THREE.Bone();
-		this.frontLeftKneeBone.position.y = -0.8;
+		this.frontLeftKneeBone.position.y = -legHeight;
 		this.frontLeftShoulderBone.add(this.frontLeftKneeBone);
 		
-		const frontLeftLowerLegGeometry = new THREE.BoxGeometry(0.15, 0.8, 0.15);
-		const frontLeftLowerLegEdges = new THREE.EdgesGeometry(frontLeftLowerLegGeometry);
-		this.frontLeftLowerLegMesh = new THREE.LineSegments(frontLeftLowerLegEdges, new THREE.LineBasicMaterial({ color: colorA, linewidth: 2 }));
-		this.frontLeftLowerLegMesh.position.y = -0.4;
+		const frontLeftLowerLegGeometry = new THREE.BoxGeometry(legWidth * 0.75, legHeight, legLength * 0.75);
+		this.frontLeftLowerLegMesh = new THREE.Mesh(frontLeftLowerLegGeometry, mainMaterial);
+		this.frontLeftLowerLegMesh.position.y = -legHeight * 0.5;
 		this.frontLeftKneeBone.add(this.frontLeftLowerLegMesh);
 		
 		this.frontLeftFootBone = new THREE.Bone();
-		this.frontLeftFootBone.position.y = -0.8;
+		this.frontLeftFootBone.position.y = -legHeight;
 		this.frontLeftKneeBone.add(this.frontLeftFootBone);
 		
-		const frontLeftFootGeometry = new THREE.BoxGeometry(0.2, 0.1, 0.3);
-		const frontLeftFootEdges = new THREE.EdgesGeometry(frontLeftFootGeometry);
-		this.frontLeftFootMesh = new THREE.LineSegments(frontLeftFootEdges, new THREE.LineBasicMaterial({ color: colorB, linewidth: 2 }));
-		this.frontLeftFootMesh.position.set(0, -0.05, 0.1);
+		const frontLeftFootGeometry = new THREE.BoxGeometry(footWidth, footHeight, footLength);
+		this.frontLeftFootMesh = new THREE.Mesh(frontLeftFootGeometry, subMaterial);
+		this.frontLeftFootMesh.position.set(0, -footHeight * 0.5, footLength * 0.3);
 		this.frontLeftFootBone.add(this.frontLeftFootMesh);
 
 		// 前脚（右）
 		this.frontRightShoulderBone = new THREE.Bone();
-		this.frontRightShoulderBone.position.set(-0.8, -0.2, 0.8);
+		this.frontRightShoulderBone.position.set(-bodyWidth * 0.5, -0.2, bodyLength * 0.3);
 		this.bodyBone.add(this.frontRightShoulderBone);
 		
-		const frontRightUpperLegGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
-		const frontRightUpperLegEdges = new THREE.EdgesGeometry(frontRightUpperLegGeometry);
-		this.frontRightUpperLegMesh = new THREE.LineSegments(frontRightUpperLegEdges, new THREE.LineBasicMaterial({ color: colorB, linewidth: 2 }));
-		this.frontRightUpperLegMesh.position.y = -0.4;
+		const frontRightUpperLegGeometry = new THREE.BoxGeometry(legWidth, legHeight, legLength);
+		this.frontRightUpperLegMesh = new THREE.Mesh(frontRightUpperLegGeometry, subMaterial);
+		this.frontRightUpperLegMesh.position.y = -legHeight * 0.5;
 		this.frontRightShoulderBone.add(this.frontRightUpperLegMesh);
 		
 		this.frontRightKneeBone = new THREE.Bone();
-		this.frontRightKneeBone.position.y = -0.8;
+		this.frontRightKneeBone.position.y = -legHeight;
 		this.frontRightShoulderBone.add(this.frontRightKneeBone);
 		
-		const frontRightLowerLegGeometry = new THREE.BoxGeometry(0.15, 0.8, 0.15);
-		const frontRightLowerLegEdges = new THREE.EdgesGeometry(frontRightLowerLegGeometry);
-		this.frontRightLowerLegMesh = new THREE.LineSegments(frontRightLowerLegEdges, new THREE.LineBasicMaterial({ color: colorA, linewidth: 2 }));
-		this.frontRightLowerLegMesh.position.y = -0.4;
+		const frontRightLowerLegGeometry = new THREE.BoxGeometry(legWidth * 0.75, legHeight, legLength * 0.75);
+		this.frontRightLowerLegMesh = new THREE.Mesh(frontRightLowerLegGeometry, mainMaterial);
+		this.frontRightLowerLegMesh.position.y = -legHeight * 0.5;
 		this.frontRightKneeBone.add(this.frontRightLowerLegMesh);
 		
 		this.frontRightFootBone = new THREE.Bone();
-		this.frontRightFootBone.position.y = -0.8;
+		this.frontRightFootBone.position.y = -legHeight;
 		this.frontRightKneeBone.add(this.frontRightFootBone);
 		
-		const frontRightFootGeometry = new THREE.BoxGeometry(0.2, 0.1, 0.3);
-		const frontRightFootEdges = new THREE.EdgesGeometry(frontRightFootGeometry);
-		this.frontRightFootMesh = new THREE.LineSegments(frontRightFootEdges, new THREE.LineBasicMaterial({ color: colorB, linewidth: 2 }));
-		this.frontRightFootMesh.position.set(0, -0.05, 0.1);
+		const frontRightFootGeometry = new THREE.BoxGeometry(footWidth, footHeight, footLength);
+		this.frontRightFootMesh = new THREE.Mesh(frontRightFootGeometry, subMaterial);
+		this.frontRightFootMesh.position.set(0, -footHeight * 0.5, footLength * 0.3);
 		this.frontRightFootBone.add(this.frontRightFootMesh);
 
 		// 後脚（左）
 		this.backLeftHipBone = new THREE.Bone();
-		this.backLeftHipBone.position.set(0.8, -0.2, -0.8);
+		this.backLeftHipBone.position.set(bodyWidth * 0.5, -0.2, -bodyLength * 0.3);
 		this.bodyBone.add(this.backLeftHipBone);
 		
-		const backLeftUpperLegGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
-		const backLeftUpperLegEdges = new THREE.EdgesGeometry(backLeftUpperLegGeometry);
-		this.backLeftUpperLegMesh = new THREE.LineSegments(backLeftUpperLegEdges, new THREE.LineBasicMaterial({ color: colorB, linewidth: 2 }));
-		this.backLeftUpperLegMesh.position.y = -0.4;
+		const backLeftUpperLegGeometry = new THREE.BoxGeometry(legWidth, legHeight, legLength);
+		this.backLeftUpperLegMesh = new THREE.Mesh(backLeftUpperLegGeometry, subMaterial);
+		this.backLeftUpperLegMesh.position.y = -legHeight * 0.5;
 		this.backLeftHipBone.add(this.backLeftUpperLegMesh);
 		
 		this.backLeftKneeBone = new THREE.Bone();
-		this.backLeftKneeBone.position.y = -0.8;
+		this.backLeftKneeBone.position.y = -legHeight;
 		this.backLeftHipBone.add(this.backLeftKneeBone);
 		
-		const backLeftLowerLegGeometry = new THREE.BoxGeometry(0.15, 0.8, 0.15);
-		const backLeftLowerLegEdges = new THREE.EdgesGeometry(backLeftLowerLegGeometry);
-		this.backLeftLowerLegMesh = new THREE.LineSegments(backLeftLowerLegEdges, new THREE.LineBasicMaterial({ color: colorA, linewidth: 2 }));
-		this.backLeftLowerLegMesh.position.y = -0.4;
+		const backLeftLowerLegGeometry = new THREE.BoxGeometry(legWidth * 0.75, legHeight, legLength * 0.75);
+		this.backLeftLowerLegMesh = new THREE.Mesh(backLeftLowerLegGeometry, mainMaterial);
+		this.backLeftLowerLegMesh.position.y = -legHeight * 0.5;
 		this.backLeftKneeBone.add(this.backLeftLowerLegMesh);
 		
 		this.backLeftFootBone = new THREE.Bone();
-		this.backLeftFootBone.position.y = -0.8;
+		this.backLeftFootBone.position.y = -legHeight;
 		this.backLeftKneeBone.add(this.backLeftFootBone);
 		
-		const backLeftFootGeometry = new THREE.BoxGeometry(0.2, 0.1, 0.3);
-		const backLeftFootEdges = new THREE.EdgesGeometry(backLeftFootGeometry);
-		this.backLeftFootMesh = new THREE.LineSegments(backLeftFootEdges, new THREE.LineBasicMaterial({ color: colorB, linewidth: 2 }));
-		this.backLeftFootMesh.position.set(0, -0.05, 0.1);
+		const backLeftFootGeometry = new THREE.BoxGeometry(footWidth, footHeight, footLength);
+		this.backLeftFootMesh = new THREE.Mesh(backLeftFootGeometry, subMaterial);
+		this.backLeftFootMesh.position.set(0, -footHeight * 0.5, footLength * 0.3);
 		this.backLeftFootBone.add(this.backLeftFootMesh);
 
 		// 後脚（右）
 		this.backRightHipBone = new THREE.Bone();
-		this.backRightHipBone.position.set(-0.8, -0.2, -0.8);
+		this.backRightHipBone.position.set(-bodyWidth * 0.5, -0.2, -bodyLength * 0.3);
 		this.bodyBone.add(this.backRightHipBone);
 		
-		const backRightUpperLegGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
-		const backRightUpperLegEdges = new THREE.EdgesGeometry(backRightUpperLegGeometry);
-		this.backRightUpperLegMesh = new THREE.LineSegments(backRightUpperLegEdges, new THREE.LineBasicMaterial({ color: colorB, linewidth: 2 }));
-		this.backRightUpperLegMesh.position.y = -0.4;
+		const backRightUpperLegGeometry = new THREE.BoxGeometry(legWidth, legHeight, legLength);
+		this.backRightUpperLegMesh = new THREE.Mesh(backRightUpperLegGeometry, subMaterial);
+		this.backRightUpperLegMesh.position.y = -legHeight * 0.5;
 		this.backRightHipBone.add(this.backRightUpperLegMesh);
 		
 		this.backRightKneeBone = new THREE.Bone();
-		this.backRightKneeBone.position.y = -0.8;
+		this.backRightKneeBone.position.y = -legHeight;
 		this.backRightHipBone.add(this.backRightKneeBone);
 		
-		const backRightLowerLegGeometry = new THREE.BoxGeometry(0.15, 0.8, 0.15);
-		const backRightLowerLegEdges = new THREE.EdgesGeometry(backRightLowerLegGeometry);
-		this.backRightLowerLegMesh = new THREE.LineSegments(backRightLowerLegEdges, new THREE.LineBasicMaterial({ color: colorA, linewidth: 2 }));
-		this.backRightLowerLegMesh.position.y = -0.4;
+		const backRightLowerLegGeometry = new THREE.BoxGeometry(legWidth * 0.75, legHeight, legLength * 0.75);
+		this.backRightLowerLegMesh = new THREE.Mesh(backRightLowerLegGeometry, mainMaterial);
+		this.backRightLowerLegMesh.position.y = -legHeight * 0.5;
 		this.backRightKneeBone.add(this.backRightLowerLegMesh);
 		
 		this.backRightFootBone = new THREE.Bone();
-		this.backRightFootBone.position.y = -0.8;
+		this.backRightFootBone.position.y = -legHeight;
 		this.backRightKneeBone.add(this.backRightFootBone);
 		
-		const backRightFootGeometry = new THREE.BoxGeometry(0.2, 0.1, 0.3);
-		const backRightFootEdges = new THREE.EdgesGeometry(backRightFootGeometry);
-		this.backRightFootMesh = new THREE.LineSegments(backRightFootEdges, new THREE.LineBasicMaterial({ color: colorB, linewidth: 2 }));
-		this.backRightFootMesh.position.set(0, -0.05, 0.1);
+		const backRightFootGeometry = new THREE.BoxGeometry(footWidth, footHeight, footLength);
+		this.backRightFootMesh = new THREE.Mesh(backRightFootGeometry, subMaterial);
+		this.backRightFootMesh.position.set(0, -footHeight * 0.5, footLength * 0.3);
 		this.backRightFootBone.add(this.backRightFootMesh);
 
-		// 尻尾ボーン（オプション）
+		// 尻尾ボーン
 		this.tailBone = new THREE.Bone();
-		this.tailBone.position.set(0, 0.2, -1.2);
+		this.tailBone.position.set(0, 0.2, -bodyLength * 0.5);
 		this.bodyBone.add(this.tailBone);
 		
-		const tailGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.8);
-		const tailEdges = new THREE.EdgesGeometry(tailGeometry);
-		this.tailMesh = new THREE.LineSegments(tailEdges, new THREE.LineBasicMaterial({ color: colorA, linewidth: 2 }));
+		const tailGeometry = new THREE.BoxGeometry(0.2, 0.2, tailLength);
+		this.tailMesh = new THREE.Mesh(tailGeometry, mainMaterial);
 		this.tailMesh.position.y = 0;
 		this.tailBone.add(this.tailMesh);
 
@@ -476,6 +594,47 @@ class Character {
 		this.character.position.copy(this.position);
 		this.isMoving = direction.length() > 0;
 
+		// 移動中はアニメーション速度を適切に設定
+		if (this.isMoving && !this.isRunning) {
+			// 動物の種類に応じたアニメーション速度を設定
+			let baseSpeed = 0.4; // 基本速度
+			
+			if (this.type === 'animal' && this.game && this.game.animalType) {
+				switch (this.game.animalType) {
+					case 'ゾウ':
+						baseSpeed = 0.2; // ゾウはゆっくり
+						break;
+					case 'キリン':
+						baseSpeed = 0.3; // キリンは少しゆっくり
+						break;
+					case 'シマウマ':
+						baseSpeed = 0.6; // シマウマは少し速め
+						break;
+									case 'ハイエナ':
+					baseSpeed = 0.7; // ハイエナは速め
+					break;
+				case 'ミーアキャット':
+					baseSpeed = 0.8; // ミーアキャットは速い
+					break;
+				case 'トムソンガゼル':
+					baseSpeed = 0.9; // トムソンガゼルは最も速い
+					break;
+				case 'ライオン':
+					baseSpeed = 0.5; // ライオンは中程度
+					break;
+				default:
+					baseSpeed = 0.4;
+				}
+			}
+			this.animationSpeed = baseSpeed;
+		}
+
+		// アニメーション時間の更新
+		this.animationTime += deltaTime * this.animationSpeed;
+		
+		// アニメーションの更新
+		this.updateLimbAnimation(deltaTime);
+
 		// this.gameがnullの場合の安全な処理
 		if (this.game && this.game.fieldMap) {
 			const height = this.game.fieldMap.getHeightAt(this.position.x, this.position.z);
@@ -488,6 +647,28 @@ class Character {
 			if (terrainHeight !== undefined) {
 				this.position.y = terrainHeight + 1;
 			}
+		}
+	}
+
+	// アニメーション更新メソッド
+	update(deltaTime) {
+		// 移動していない場合はアニメーション速度を遅くする
+		if (!this.isMoving && !this.isRunning) {
+			this.animationSpeed = 0.1; // 静止時は非常にゆっくり
+		}
+		
+		// アニメーション時間の更新
+		this.animationTime += deltaTime * this.animationSpeed;
+		
+		// 各種アニメーションの更新
+		if (this.isAttacking) {
+			this.updateAttackAnimation(deltaTime);
+		} else if (this.isJumping) {
+			this.updateJumpAnimation(deltaTime);
+		} else if (this.isFalling) {
+			this.updateFallAnimation(deltaTime);
+		} else {
+			this.updateLimbAnimation(deltaTime);
 		}
 	}
 
@@ -516,7 +697,46 @@ class Character {
 	setRunning(isRunning) {
 		this.isRunning = isRunning;
 		this.isMoving = isRunning;
-		this.animationSpeed = isRunning ? 18.0 : 18.0; // 常に2倍の速度を維持
+		
+		// 動物の種類に応じたアニメーション速度を設定
+		let baseSpeed = 0.4; // 基本速度
+		
+		if (this.type === 'animal' && this.game && this.game.animalType) {
+			switch (this.game.animalType) {
+				case 'ゾウ':
+					baseSpeed = 0.2; // ゾウはゆっくり
+					break;
+				case 'キリン':
+					baseSpeed = 0.3; // キリンは少しゆっくり
+					break;
+				case 'シマウマ':
+					baseSpeed = 0.6; // シマウマは少し速め
+					break;
+				case 'ハイエナ':
+					baseSpeed = 0.7; // ハイエナは速め
+					break;
+				case 'ミーアキャット':
+					baseSpeed = 0.8; // ミーアキャットは速い
+					break;
+				case 'トムソンガゼル':
+					baseSpeed = 0.9; // トムソンガゼルは最も速い
+					break;
+				case 'ライオン':
+					baseSpeed = 0.5; // ライオンは中程度
+					break;
+				default:
+					baseSpeed = 0.4;
+			}
+		}
+		
+		// 走っている場合は1.5倍の速度
+		this.animationSpeed = isRunning ? baseSpeed * 1.5 : baseSpeed;
+	}
+
+	stopMoving() {
+		this.isMoving = false;
+		this.isRunning = false;
+		this.velocity.set(0, 0, 0);
 	}
 
 	startAttack() {

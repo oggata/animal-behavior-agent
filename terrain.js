@@ -82,38 +82,18 @@ function noise(x, y) {
     const nx = x * NOISE_SCALE;
     const ny = y * NOISE_SCALE;
     
-    // config.jsの設定を使用
-    const config = terrainConfig.generation;
-    
-    // ベース地形（大きな起伏）- 設定に基づいて調整
-    const baseNoise = fractalNoise(nx * config.baseNoiseScale, ny * config.baseNoiseScale, 4) * config.baseNoiseAmplitude;
-    
-    // 詳細ノイズ（小さな起伏）- 設定に基づいて調整
-    const detailNoise = fractalNoise(nx * config.detailNoiseScale, ny * config.detailNoiseScale, 6) * config.detailNoiseAmplitude;
-    
-    // 山脈ノイズ - 設定に基づいて調整
-    const mountainNoise = ridgeNoise(nx * config.mountainNoiseScale, ny * config.mountainNoiseScale) * config.mountainNoiseAmplitude;
-    
-    // 大陸形状（中央が高く、端が低い）- 設定に基づいて調整
-    const continentShape = 1 - Math.min(1, Math.sqrt(x*x + y*y) * config.continentShapeScale);
-    
-    // 全て組み合わせ
-    let rawHeight = (baseNoise + detailNoise + mountainNoise) * continentShape;
-    
-    // heightRangesの割合設定を反映するための高さ調整
-    const terrainRanges = terrainConfig.heightRanges;
-    
-    // 正規化された高さ（0-1の範囲）
-    const normalizedHeight = (rawHeight + 10) / 20; // -10から10の範囲を0-1に正規化
-    const clampedHeight = Math.max(0, Math.min(1, normalizedHeight));
+    // 地形タイプ決定用のノイズ（より細かい変化）
+    const terrainNoise = deterministicNoise(nx * 0.5, ny * 0.5);
+    const terrainRatio = terrainNoise; // 0-1の範囲
     
     // 地形タイプを決定（割合に基づいて）
+    const terrainRanges = terrainConfig.heightRanges;
     let selectedTerrain = null;
     let cumulativeRatio = 0;
     
     for (const [terrainType, range] of Object.entries(terrainRanges)) {
         cumulativeRatio += range.ratio;
-        if (clampedHeight <= cumulativeRatio) {
+        if (terrainRatio <= cumulativeRatio) {
             selectedTerrain = { type: terrainType, range: range };
             break;
         }
@@ -124,13 +104,17 @@ function noise(x, y) {
         selectedTerrain = { type: "低地草原", range: terrainRanges["低地草原"] };
     }
     
-    // 選択された地形の範囲内でランダムな高さを生成
+    // 選択された地形の範囲内で詳細な高さを生成
     const terrainRange = selectedTerrain.range;
-    const localNoise = fractalNoise(nx * 2, ny * 2, 3) * 0.5 + 0.5; // 0-1の範囲
-    const adjustedHeight = terrainRange.min + (terrainRange.max - terrainRange.min) * localNoise;
+    const detailNoise = deterministicNoise(nx * 5, ny * 5); // より細かい詳細変化
+    const height = terrainRange.min + (terrainRange.max - terrainRange.min) * detailNoise;
     
-    // 調整された高さを返す
-    return adjustedHeight * HEIGHT_SCALE * 0.2;
+    // デバッグ情報（最初の数回のみ出力）
+    if (Math.random() < 0.01) { // 1%の確率で出力（より頻繁に）
+        console.log(`地形生成: terrainRatio=${terrainRatio.toFixed(3)}, terrainType=${selectedTerrain.type}, height=${height.toFixed(2)}, range=${terrainRange.min}-${terrainRange.max}`);
+    }
+    
+    return height;
 }
 
 // チャンククラス
@@ -358,6 +342,13 @@ function initTerrain() {
     // 初期チャンクを強制生成
     updateChunks();
     console.log("初期チャンク生成完了:", chunks.size, "個");
+    
+    // 設定された割合を確認
+    console.log("=== 設定された地形割合 ===");
+    const terrainRanges = terrainConfig.heightRanges;
+    Object.entries(terrainRanges).forEach(([type, range]) => {
+        console.log(`${type}: ${(range.ratio * 100).toFixed(1)}% (高さ: ${range.min}-${range.max})`);
+    });
 }
 
 // 地形システムの更新

@@ -2,7 +2,7 @@
 const simulationConfig = {
     // 動物の移動速度設定（0.1-1.0の範囲、数値が小さいほど遅い）
     animalSpeed: {
-        baseSpeed: 0.3,           // 基本移動速度（全体の基準）
+        baseSpeed: 0.012,         // 基本移動速度（0.06から0.012に変更、1/5に調整）
         speedMultiplier: 0.5,     // 速度倍率（全体を遅くする）
         
         // 動物種別の速度調整（基本速度に対する倍率）
@@ -11,16 +11,18 @@ const simulationConfig = {
             "ゾウ": 0.6,          // ゾウは遅い
             "キリン": 0.8,        // キリンは中程度
             "シマウマ": 1.5,      // シマウマは最も速い
-            "ハイエナ": 1.0       // ハイエナは標準
+            "ハイエナ": 1.0,      // ハイエナは標準
+            "ミーアキャット": 1.3, // ミーアキャットは速い
+            "トムソンガゼル": 1.6  // トムソンガゼルは最も速い
         },
         
         // 状況別の速度調整
         bySituation: {
             normal: 1.0,          // 通常移動
-            hunting: 1.3,         // 狩り中
-            escaping: 1.5,        // 逃げ中
-            resting: 0.3,         // 休息中
-            exploring: 0.7        // 探索中
+            hunting: 1.2,         // 狩り中（少し調整）
+            escaping: 1.4,        // 逃げ中（少し調整）
+            resting: 0.2,         // 休息中（より遅く）
+            exploring: 0.6        // 探索中（少し調整）
         }
     },
     
@@ -42,7 +44,7 @@ const simulationConfig = {
 
 // サバンナの動物たちの詳細な性格設定
 const animalPersonalities = [
-    // ライオン（3匹）
+    // ライオン（6匹 - 2倍に増加）
     {
         name: "レオ",
         type: "ライオン",
@@ -57,16 +59,16 @@ const animalPersonalities = [
                 leadership: 0.9       // リーダーシップ
             }
         },
-        color: 0xDAA520,
+        color: 0xD2691E, // 明るい茶色（ライオン）
         hp: 100,
         maxHp: 100,
         isPredator: true,
-        prey: ["シマウマ", "キリン"],
+        prey: ["シマウマ", "キリン", "トムソンガゼル"],
         dailyRoutine: {
-            morning: ["草原", "木"],
-            afternoon: ["草原", "池"],
-            evening: ["草原", "洞穴"],
-            night: ["洞穴"]
+            morning: ["低地草原", "森林"],
+            afternoon: ["低地草原", "川"],
+            evening: ["低地草原", "丘陵"],
+            night: ["丘陵"]
         },
         home: null // 動的に生成
     },
@@ -84,16 +86,16 @@ const animalPersonalities = [
                 leadership: 0.6
             }
         },
-        color: 0xDAA520,
+        color: 0xD2691E, // 明るい茶色（ライオン）
         hp: 80,
         maxHp: 80,
         isPredator: true,
-        prey: ["シマウマ", "キリン"],
+        prey: ["シマウマ", "キリン", "トムソンガゼル"],
         dailyRoutine: {
-            morning: ["草原", "木"],
-            afternoon: ["草原", "池"],
-            evening: ["草原", "洞穴"],
-            night: ["洞穴"]
+            morning: ["低地草原", "森林"],
+            afternoon: ["低地草原", "川"],
+            evening: ["低地草原", "丘陵"],
+            night: ["丘陵"]
         },
         home: null // 動的に生成
     },
@@ -111,21 +113,102 @@ const animalPersonalities = [
                 leadership: 0.5
             }
         },
-        color: 0xDAA520,
+        color: 0xD2691E, // 明るい茶色（ライオン）
         hp: 90,
         maxHp: 90,
         isPredator: true,
-        prey: ["シマウマ", "キリン"],
+        prey: ["シマウマ", "キリン", "トムソンガゼル"],
         dailyRoutine: {
-            morning: ["草原", "木"],
-            afternoon: ["草原", "池"],
-            evening: ["草原", "洞穴"],
-            night: ["洞穴"]
+            morning: ["低地草原", "森林"],
+            afternoon: ["低地草原", "川"],
+            evening: ["低地草原", "丘陵"],
+            night: ["丘陵"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "マフサ",
+        type: "ライオン",
+        age: 5,
+        personality: {
+            description: "若いメスライオン。狩りの技術を学んでいる最中で、ナラの弟子。",
+            traits: {
+                aggression: 0.7,
+                energy: 0.8,
+                sociability: 0.7,
+                intelligence: 0.8,
+                leadership: 0.4
+            }
+        },
+        color: 0xD2691E, // 明るい茶色（ライオン）
+        hp: 75,
+        maxHp: 75,
+        isPredator: true,
+        prey: ["シマウマ", "キリン", "トムソンガゼル"],
+        dailyRoutine: {
+            morning: ["低地草原", "森林"],
+            afternoon: ["低地草原", "川"],
+            evening: ["低地草原", "丘陵"],
+            night: ["丘陵"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "スカー",
+        type: "ライオン",
+        age: 9,
+        personality: {
+            description: "経験豊富なライオン。顔に傷があり、多くの戦いを経験してきた。",
+            traits: {
+                aggression: 0.9,
+                energy: 0.6,
+                sociability: 0.5,
+                intelligence: 0.9,
+                leadership: 0.8
+            }
+        },
+        color: 0xD2691E, // 明るい茶色（ライオン）
+        hp: 95,
+        maxHp: 95,
+        isPredator: true,
+        prey: ["シマウマ", "キリン", "トムソンガゼル"],
+        dailyRoutine: {
+            morning: ["低地草原", "森林"],
+            afternoon: ["低地草原", "川"],
+            evening: ["低地草原", "丘陵"],
+            night: ["丘陵"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "キアラ",
+        type: "ライオン",
+        age: 4,
+        personality: {
+            description: "最も若いライオン。遊び好きで、群れを楽しませるのが得意。",
+            traits: {
+                aggression: 0.6,
+                energy: 0.9,
+                sociability: 0.9,
+                intelligence: 0.6,
+                leadership: 0.3
+            }
+        },
+        color: 0xD2691E, // 明るい茶色（ライオン）
+        hp: 70,
+        maxHp: 70,
+        isPredator: true,
+        prey: ["シマウマ", "キリン", "トムソンガゼル"],
+        dailyRoutine: {
+            morning: ["低地草原", "森林"],
+            afternoon: ["低地草原", "川"],
+            evening: ["低地草原", "丘陵"],
+            night: ["丘陵"]
         },
         home: null // 動的に生成
     },
 
-    // ゾウ（3匹）
+    // ゾウ（6匹 - 2倍に増加）
     {
         name: "ダンボ",
         type: "ゾウ",
@@ -140,16 +223,16 @@ const animalPersonalities = [
                 leadership: 0.8
             }
         },
-        color: 0x8B7355,
+        color: 0xA9A9A9, // 明るい灰色（ゾウ）
         hp: 200,
         maxHp: 200,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["草原", "池"],
-            afternoon: ["木", "草原"],
-            evening: ["池", "草原"],
-            night: ["大きな石"]
+            morning: ["低地草原", "川"],
+            afternoon: ["森林", "低地草原"],
+            evening: ["川", "低地草原"],
+            night: ["低地草原"]
         },
         home: null // 動的に生成
     },
@@ -167,16 +250,16 @@ const animalPersonalities = [
                 leadership: 0.7
             }
         },
-        color: 0x8B7355,
+        color: 0xA9A9A9, // 明るい灰色（ゾウ）
         hp: 180,
         maxHp: 180,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["草原", "池"],
-            afternoon: ["木", "草原"],
-            evening: ["池", "草原"],
-            night: ["大きな石"]
+            morning: ["低地草原", "川"],
+            afternoon: ["森林", "低地草原"],
+            evening: ["川", "低地草原"],
+            night: ["低地草原"]
         },
         home: null // 動的に生成
     },
@@ -194,21 +277,102 @@ const animalPersonalities = [
                 leadership: 0.4
             }
         },
-        color: 0x8B7355,
+        color: 0xA9A9A9, // 明るい灰色（ゾウ）
         hp: 160,
         maxHp: 160,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["草原", "池"],
-            afternoon: ["木", "草原"],
-            evening: ["池", "草原"],
-            night: ["大きな石"]
+            morning: ["低地草原", "川"],
+            afternoon: ["森林", "低地草原"],
+            evening: ["川", "低地草原"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "マティルダ",
+        type: "ゾウ",
+        age: 18,
+        personality: {
+            description: "メスゾウ。芸術的な性格で、木の枝で絵を描くのが好き。",
+            traits: {
+                aggression: 0.1,
+                energy: 0.7,
+                sociability: 0.8,
+                intelligence: 0.9,
+                leadership: 0.5
+            }
+        },
+        color: 0xA9A9A9, // 明るい灰色（ゾウ）
+        hp: 170,
+        maxHp: 170,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["森林", "低地草原"],
+            evening: ["川", "低地草原"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "バルー",
+        type: "ゾウ",
+        age: 12,
+        personality: {
+            description: "若いオスゾウ。音楽が好きで、鼻でリズムを取るのが得意。",
+            traits: {
+                aggression: 0.2,
+                energy: 0.9,
+                sociability: 0.8,
+                intelligence: 0.6,
+                leadership: 0.3
+            }
+        },
+        color: 0xA9A9A9, // 明るい灰色（ゾウ）
+        hp: 140,
+        maxHp: 140,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["森林", "低地草原"],
+            evening: ["川", "低地草原"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ポー",
+        type: "ゾウ",
+        age: 22,
+        personality: {
+            description: "メスゾウ。哲学的な性格で、深い思考を好む。群れの知恵袋的存在。",
+            traits: {
+                aggression: 0.1,
+                energy: 0.4,
+                sociability: 0.7,
+                intelligence: 0.95,
+                leadership: 0.6
+            }
+        },
+        color: 0xA9A9A9, // 明るい灰色（ゾウ）
+        hp: 190,
+        maxHp: 190,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["森林", "低地草原"],
+            evening: ["川", "低地草原"],
+            night: ["低地草原"]
         },
         home: null // 動的に生成
     },
 
-    // キリン（3匹）
+    // キリン（6匹 - 2倍に増加）
     {
         name: "ジラフ",
         type: "キリン",
@@ -223,16 +387,16 @@ const animalPersonalities = [
                 leadership: 0.8
             }
         },
-        color: 0xF4A460,
+        color: 0xFFD700, // 黄色（キリン）
         hp: 120,
         maxHp: 120,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["木", "草原"],
-            afternoon: ["草原", "池"],
-            evening: ["木", "草原"],
-            night: ["大きな石"]
+            morning: ["森林", "低地草原"],
+            afternoon: ["低地草原", "川"],
+            evening: ["森林", "低地草原"],
+            night: ["森林"]
         },
         home: null // 動的に生成
     },
@@ -250,16 +414,16 @@ const animalPersonalities = [
                 leadership: 0.3
             }
         },
-        color: 0xF4A460,
+        color: 0xFFD700, // 黄色（キリン）
         hp: 100,
         maxHp: 100,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["木", "草原"],
-            afternoon: ["草原", "池"],
-            evening: ["木", "草原"],
-            night: ["大きな石"]
+            morning: ["森林", "低地草原"],
+            afternoon: ["低地草原", "川"],
+            evening: ["森林", "低地草原"],
+            night: ["森林"]
         },
         home: null // 動的に生成
     },
@@ -277,21 +441,102 @@ const animalPersonalities = [
                 leadership: 0.5
             }
         },
-        color: 0xF4A460,
+        color: 0xFFD700, // 黄色（キリン）
         hp: 110,
         maxHp: 110,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["木", "草原"],
-            afternoon: ["草原", "池"],
-            evening: ["木", "草原"],
-            night: ["大きな石"]
+            morning: ["森林", "低地草原"],
+            afternoon: ["低地草原", "川"],
+            evening: ["森林", "低地草原"],
+            night: ["森林"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ハイツ",
+        type: "キリン",
+        age: 6,
+        personality: {
+            description: "最も若いキリン。長い首を活かして遠くまで見渡すのが得意。",
+            traits: {
+                aggression: 0.1,
+                energy: 0.9,
+                sociability: 0.8,
+                intelligence: 0.5,
+                leadership: 0.2
+            }
+        },
+        color: 0xFFD700, // 黄色（キリン）
+        hp: 90,
+        maxHp: 90,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["森林", "低地草原"],
+            afternoon: ["低地草原", "川"],
+            evening: ["森林", "低地草原"],
+            night: ["森林"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "スカイ",
+        type: "キリン",
+        age: 14,
+        personality: {
+            description: "年長のキリン。空を見上げるのが好きで、天気を予測するのが得意。",
+            traits: {
+                aggression: 0.1,
+                energy: 0.5,
+                sociability: 0.7,
+                intelligence: 0.9,
+                leadership: 0.6
+            }
+        },
+        color: 0xFFD700, // 黄色（キリン）
+        hp: 130,
+        maxHp: 130,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["森林", "低地草原"],
+            afternoon: ["低地草原", "川"],
+            evening: ["森林", "低地草原"],
+            night: ["森林"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ブレイズ",
+        type: "キリン",
+        age: 9,
+        personality: {
+            description: "メスキリン。模様が炎のように見えることから名付けられた。",
+            traits: {
+                aggression: 0.2,
+                energy: 0.7,
+                sociability: 0.8,
+                intelligence: 0.7,
+                leadership: 0.4
+            }
+        },
+        color: 0xFFD700, // 黄色（キリン）
+        hp: 105,
+        maxHp: 105,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["森林", "低地草原"],
+            afternoon: ["低地草原", "川"],
+            evening: ["森林", "低地草原"],
+            night: ["森林"]
         },
         home: null // 動的に生成
     },
 
-    // シマウマ（3匹）
+    // シマウマ（6匹 - 2倍に増加）
     {
         name: "ゼブラ",
         type: "シマウマ",
@@ -306,16 +551,16 @@ const animalPersonalities = [
                 leadership: 0.8
             }
         },
-        color: 0xFFFFFF,
+        color: 0xFFFFFF, // 白（シマウマ）
         hp: 80,
         maxHp: 80,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["草原", "池"],
-            afternoon: ["草原", "木"],
-            evening: ["草原", "池"],
-            night: ["大きな石"]
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
         },
         home: null // 動的に生成
     },
@@ -333,16 +578,16 @@ const animalPersonalities = [
                 leadership: 0.3
             }
         },
-        color: 0xFFFFFF,
+        color: 0xFFFFFF, // 白（シマウマ）
         hp: 70,
         maxHp: 70,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["草原", "池"],
-            afternoon: ["草原", "木"],
-            evening: ["草原", "池"],
-            night: ["大きな石"]
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
         },
         home: null // 動的に生成
     },
@@ -360,21 +605,102 @@ const animalPersonalities = [
                 leadership: 0.6
             }
         },
-        color: 0xFFFFFF,
+        color: 0xFFFFFF, // 白（シマウマ）
         hp: 75,
         maxHp: 75,
         isPredator: false,
         prey: [],
         dailyRoutine: {
-            morning: ["草原", "池"],
-            afternoon: ["草原", "木"],
-            evening: ["草原", "池"],
-            night: ["大きな石"]
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ダッシュ",
+        type: "シマウマ",
+        age: 3,
+        personality: {
+            description: "最も若いシマウマ。走るのが大好きで、群れの中で最も速い。",
+            traits: {
+                aggression: 0.1,
+                energy: 0.95,
+                sociability: 0.9,
+                intelligence: 0.4,
+                leadership: 0.1
+            }
+        },
+        color: 0xFFFFFF, // 白（シマウマ）
+        hp: 65,
+        maxHp: 65,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "シャドウ",
+        type: "シマウマ",
+        age: 7,
+        personality: {
+            description: "年長のシマウマ。経験豊富で、群れの知恵袋的存在。",
+            traits: {
+                aggression: 0.3,
+                energy: 0.7,
+                sociability: 0.8,
+                intelligence: 0.9,
+                leadership: 0.7
+            }
+        },
+        color: 0xFFFFFF, // 白（シマウマ）
+        hp: 85,
+        maxHp: 85,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "スパーク",
+        type: "シマウマ",
+        age: 4,
+        personality: {
+            description: "メスシマウマ。模様が光るように見えることから名付けられた。",
+            traits: {
+                aggression: 0.3,
+                energy: 0.8,
+                sociability: 0.8,
+                intelligence: 0.6,
+                leadership: 0.4
+            }
+        },
+        color: 0xFFFFFF, // 白（シマウマ）
+        hp: 70,
+        maxHp: 70,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
         },
         home: null // 動的に生成
     },
 
-    // ハイエナ（3匹）
+    // ハイエナ（6匹 - 2倍に増加）
     {
         name: "スカーフ",
         type: "ハイエナ",
@@ -389,21 +715,21 @@ const animalPersonalities = [
                 leadership: 0.8
             }
         },
-        color: 0x8B4513,
+        color: 0x808080, // グレー（ハイエナ）
         hp: 60,
         maxHp: 60,
         isPredator: true,
-        prey: ["シマウマ"],
+        prey: ["シマウマ", "トムソンガゼル"],
         dailyRoutine: {
-            morning: ["草原", "倒木"],
-            afternoon: ["草原", "大きな石"],
-            evening: ["草原", "倒木"],
-            night: ["洞穴"]
+            morning: ["低地草原", "山地"],
+            afternoon: ["低地草原", "丘陵"],
+            evening: ["低地草原", "山地"],
+            night: ["丘陵"]
         },
         home: null // 動的に生成
     },
     {
-        name: "バンズ",
+        name: "バンジ",
         type: "ハイエナ",
         age: 5,
         personality: {
@@ -413,19 +739,19 @@ const animalPersonalities = [
                 energy: 0.9,
                 sociability: 0.7,
                 intelligence: 0.6,
-                leadership: 0.4
+                leadership: 0.3
             }
         },
-        color: 0x8B4513,
+        color: 0x808080, // グレー（ハイエナ）
         hp: 50,
         maxHp: 50,
         isPredator: true,
-        prey: ["シマウマ"],
+        prey: ["シマウマ", "トムソンガゼル"],
         dailyRoutine: {
-            morning: ["草原", "倒木"],
-            afternoon: ["草原", "大きな石"],
-            evening: ["草原", "倒木"],
-            night: ["洞穴"]
+            morning: ["低地草原", "山地"],
+            afternoon: ["低地草原", "丘陵"],
+            evening: ["低地草原", "山地"],
+            night: ["丘陵"]
         },
         home: null // 動的に生成
     },
@@ -434,7 +760,7 @@ const animalPersonalities = [
         type: "ハイエナ",
         age: 6,
         personality: {
-            description: "メスハイエナ。群れの母親的存在で、他のハイエナを統率する。",
+            description: "メスハイエナ。群れの母親的存在で、他のハイエナを守る。",
             traits: {
                 aggression: 0.6,
                 energy: 0.8,
@@ -443,16 +769,425 @@ const animalPersonalities = [
                 leadership: 0.7
             }
         },
-        color: 0x8B4513,
+        color: 0x808080, // グレー（ハイエナ）
         hp: 55,
         maxHp: 55,
         isPredator: true,
-        prey: ["シマウマ"],
+        prey: ["シマウマ", "トムソンガゼル"],
         dailyRoutine: {
-            morning: ["草原", "倒木"],
-            afternoon: ["草原", "大きな石"],
-            evening: ["草原", "倒木"],
-            night: ["洞穴"]
+            morning: ["低地草原", "山地"],
+            afternoon: ["低地草原", "丘陵"],
+            evening: ["低地草原", "山地"],
+            night: ["丘陵"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ラッシュ",
+        type: "ハイエナ",
+        age: 4,
+        personality: {
+            description: "若いハイエナ。好奇心旺盛で、新しい狩りの方法を試すのが好き。",
+            traits: {
+                aggression: 0.6,
+                energy: 0.9,
+                sociability: 0.6,
+                intelligence: 0.7,
+                leadership: 0.2
+            }
+        },
+        color: 0x808080, // グレー（ハイエナ）
+        hp: 45,
+        maxHp: 45,
+        isPredator: true,
+        prey: ["シマウマ", "トムソンガゼル"],
+        dailyRoutine: {
+            morning: ["低地草原", "山地"],
+            afternoon: ["低地草原", "丘陵"],
+            evening: ["低地草原", "山地"],
+            night: ["丘陵"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "シャドウ",
+        type: "ハイエナ",
+        age: 8,
+        personality: {
+            description: "経験豊富なハイエナ。夜の狩りが得意で、影のように静かに獲物に近づく。",
+            traits: {
+                aggression: 0.8,
+                energy: 0.6,
+                sociability: 0.7,
+                intelligence: 0.9,
+                leadership: 0.6
+            }
+        },
+        color: 0x808080, // グレー（ハイエナ）
+        hp: 65,
+        maxHp: 65,
+        isPredator: true,
+        prey: ["シマウマ", "トムソンガゼル"],
+        dailyRoutine: {
+            morning: ["低地草原", "山地"],
+            afternoon: ["低地草原", "丘陵"],
+            evening: ["低地草原", "山地"],
+            night: ["丘陵"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ウィスパー",
+        type: "ハイエナ",
+        age: 5,
+        personality: {
+            description: "メスハイエナ。声が小さく、静かに行動する。群れの偵察役を担当。",
+            traits: {
+                aggression: 0.5,
+                energy: 0.7,
+                sociability: 0.8,
+                intelligence: 0.8,
+                leadership: 0.4
+            }
+        },
+        color: 0x808080, // グレー（ハイエナ）
+        hp: 50,
+        maxHp: 50,
+        isPredator: true,
+        prey: ["シマウマ", "トムソンガゼル"],
+        dailyRoutine: {
+            morning: ["低地草原", "山地"],
+            afternoon: ["低地草原", "丘陵"],
+            evening: ["低地草原", "山地"],
+            night: ["丘陵"]
+        },
+        home: null // 動的に生成
+    },
+
+    // ミーアキャット（6匹 - 新規追加）
+    {
+        name: "ティモン",
+        type: "ミーアキャット",
+        age: 3,
+        personality: {
+            description: "群れのリーダー。立ち上がって周囲を見張るのが得意。家族思いで責任感が強い。",
+            traits: {
+                aggression: 0.3,
+                energy: 0.9,
+                sociability: 0.95,
+                intelligence: 0.8,
+                leadership: 0.9
+            }
+        },
+        color: 0xD2B48C, // ベージュ（ミーアキャット）
+        hp: 30,
+        maxHp: 30,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "丘陵"],
+            afternoon: ["低地草原", "山地"],
+            evening: ["低地草原", "丘陵"],
+            night: ["山地"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "プンバ",
+        type: "ミーアキャット",
+        age: 2,
+        personality: {
+            description: "若いミーアキャット。好奇心旺盛で、新しいことを学ぶのが大好き。",
+            traits: {
+                aggression: 0.2,
+                energy: 0.95,
+                sociability: 0.9,
+                intelligence: 0.7,
+                leadership: 0.3
+            }
+        },
+        color: 0xD2B48C, // ベージュ（ミーアキャット）
+        hp: 25,
+        maxHp: 25,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "丘陵"],
+            afternoon: ["低地草原", "山地"],
+            evening: ["低地草原", "丘陵"],
+            night: ["山地"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "サラ",
+        type: "ミーアキャット",
+        age: 4,
+        personality: {
+            description: "メスミーアキャット。子育ての経験が豊富で、群れの母親的存在。",
+            traits: {
+                aggression: 0.4,
+                energy: 0.8,
+                sociability: 0.95,
+                intelligence: 0.8,
+                leadership: 0.7
+            }
+        },
+        color: 0xD2B48C, // ベージュ（ミーアキャット）
+        hp: 35,
+        maxHp: 35,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "丘陵"],
+            afternoon: ["低地草原", "山地"],
+            evening: ["低地草原", "丘陵"],
+            night: ["山地"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "スカウト",
+        type: "ミーアキャット",
+        age: 2,
+        personality: {
+            description: "見張り役のミーアキャット。高い視点から危険を察知するのが得意。",
+            traits: {
+                aggression: 0.3,
+                energy: 0.8,
+                sociability: 0.8,
+                intelligence: 0.9,
+                leadership: 0.5
+            }
+        },
+        color: 0xD2B48C, // ベージュ（ミーアキャット）
+        hp: 25,
+        maxHp: 25,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "丘陵"],
+            afternoon: ["低地草原", "山地"],
+            evening: ["低地草原", "丘陵"],
+            night: ["山地"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ダッシュ",
+        type: "ミーアキャット",
+        age: 1,
+        personality: {
+            description: "最も若いミーアキャット。走るのが大好きで、群れの中で最も活発。",
+            traits: {
+                aggression: 0.1,
+                energy: 0.95,
+                sociability: 0.9,
+                intelligence: 0.5,
+                leadership: 0.1
+            }
+        },
+        color: 0xD2B48C, // ベージュ（ミーアキャット）
+        hp: 20,
+        maxHp: 20,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "丘陵"],
+            afternoon: ["低地草原", "山地"],
+            evening: ["低地草原", "丘陵"],
+            night: ["山地"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ウィンク",
+        type: "ミーアキャット",
+        age: 3,
+        personality: {
+            description: "遊び好きなミーアキャット。群れを笑わせるのが得意で、みんなの人気者。",
+            traits: {
+                aggression: 0.2,
+                energy: 0.9,
+                sociability: 0.95,
+                intelligence: 0.6,
+                leadership: 0.4
+            }
+        },
+        color: 0xD2B48C, // ベージュ（ミーアキャット）
+        hp: 30,
+        maxHp: 30,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "丘陵"],
+            afternoon: ["低地草原", "山地"],
+            evening: ["低地草原", "丘陵"],
+            night: ["山地"]
+        },
+        home: null // 動的に生成
+    },
+
+    // トムソンガゼル（6匹 - 新規追加）
+    {
+        name: "トミー",
+        type: "トムソンガゼル",
+        age: 4,
+        personality: {
+            description: "群れのリーダー。素早く走るのが得意で、危険を察知する能力が高い。",
+            traits: {
+                aggression: 0.2,
+                energy: 0.95,
+                sociability: 0.8,
+                intelligence: 0.7,
+                leadership: 0.8
+            }
+        },
+        color: 0xF4A460, // サンディーブラウン（トムソンガゼル）
+        hp: 40,
+        maxHp: 40,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "スプリント",
+        type: "トムソンガゼル",
+        age: 2,
+        personality: {
+            description: "若いガゼル。走るのが大好きで、群れの中で最も速い。",
+            traits: {
+                aggression: 0.1,
+                energy: 0.95,
+                sociability: 0.9,
+                intelligence: 0.5,
+                leadership: 0.3
+            }
+        },
+        color: 0xF4A460, // サンディーブラウン（トムソンガゼル）
+        hp: 35,
+        maxHp: 35,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "グレース",
+        type: "トムソンガゼル",
+        age: 5,
+        personality: {
+            description: "メスガゼル。優雅な動きで知られ、群れの母親的存在。",
+            traits: {
+                aggression: 0.3,
+                energy: 0.8,
+                sociability: 0.9,
+                intelligence: 0.8,
+                leadership: 0.6
+            }
+        },
+        color: 0xF4A460, // サンディーブラウン（トムソンガゼル）
+        hp: 45,
+        maxHp: 45,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ホップ",
+        type: "トムソンガゼル",
+        age: 1,
+        personality: {
+            description: "最も若いガゼル。跳ねるように走るのが特徴で、みんなを楽しませる。",
+            traits: {
+                aggression: 0.1,
+                energy: 0.95,
+                sociability: 0.9,
+                intelligence: 0.4,
+                leadership: 0.1
+            }
+        },
+        color: 0xF4A460, // サンディーブラウン（トムソンガゼル）
+        hp: 30,
+        maxHp: 30,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "ウィンド",
+        type: "トムソンガゼル",
+        age: 3,
+        personality: {
+            description: "風のように速いガゼル。長距離を走るのが得意で、群れの先導役。",
+            traits: {
+                aggression: 0.2,
+                energy: 0.9,
+                sociability: 0.7,
+                intelligence: 0.6,
+                leadership: 0.5
+            }
+        },
+        color: 0xF4A460, // サンディーブラウン（トムソンガゼル）
+        hp: 40,
+        maxHp: 40,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
+        },
+        home: null // 動的に生成
+    },
+    {
+        name: "スター",
+        type: "トムソンガゼル",
+        age: 4,
+        personality: {
+            description: "美しいガゼル。模様が特徴的で、群れの中で最も目立つ存在。",
+            traits: {
+                aggression: 0.2,
+                energy: 0.8,
+                sociability: 0.8,
+                intelligence: 0.7,
+                leadership: 0.4
+            }
+        },
+        color: 0xF4A460, // サンディーブラウン（トムソンガゼル）
+        hp: 40,
+        maxHp: 40,
+        isPredator: false,
+        prey: [],
+        dailyRoutine: {
+            morning: ["低地草原", "川"],
+            afternoon: ["低地草原", "森林"],
+            evening: ["低地草原", "川"],
+            night: ["低地草原"]
         },
         home: null // 動的に生成
     }
@@ -504,6 +1239,24 @@ const animalTypes = {
         description: "狡猾で知能が高い。他の動物の獲物を横取りすることもある。",
         preferredTerrain: ["丘陵", "低地草原"],
         homeTerrain: "丘陵"
+    },
+    "ミーアキャット": {
+        speed: 0.8,
+        attackPower: 15,
+        defense: 30,
+        size: 0.4,
+        description: "小さくて社交的な動物。立ち上がって周囲を見張るのが特徴。",
+        preferredTerrain: ["低地草原", "丘陵", "山地"],
+        homeTerrain: "山地"
+    },
+    "トムソンガゼル": {
+        speed: 1.0,
+        attackPower: 10,
+        defense: 35,
+        size: 0.6,
+        description: "素早く走るのが得意な小型のガゼル。群れで行動する。",
+        preferredTerrain: ["低地草原", "川"],
+        homeTerrain: "低地草原"
     }
 };
 
@@ -575,12 +1328,12 @@ const timeActivities = {
 const terrainConfig = {
     // 地形の高さ範囲と割合
     heightRanges: {
-        "川": { min: -3, max: 0, ratio: 0.5 },        // 川 - 新規追加
-        "低地草原": { min: 0, max: 3, ratio: 0.15 },   // 低地草原 - 割合調整
+        "川": { min: -3, max: 0, ratio: 0.1 },        // 川 - 新規追加
+        "低地草原": { min: 0, max: 3, ratio: 0.25 },   // 低地草原 - 割合調整
         "森林": { min: 3, max: 8, ratio: 0.25 },       // 25% - 増加
-        "丘陵": { min: 8, max: 15, ratio: 0.10 },      // 20% - 増加
-        "山地": { min: 15, max: 25, ratio: 0.05 },     // 15% - 減少
-        "高山": { min: 25, max: 50, ratio: 0.05 }      // 5% - 大幅減少
+        "丘陵": { min: 8, max: 15, ratio: 0.2 },      // 20% - 増加
+        "山地": { min: 15, max: 25, ratio: 0.1 },     // 15% - 減少
+        "高山": { min: 25, max: 50, ratio: 0.1 }      // 5% - 大幅減少
     },
     
     // 地形の色設定
@@ -611,14 +1364,31 @@ function findSuitableHomeLocation(animalType, index) {
     const preferredTerrain = animalInfo.homeTerrain;
     const terrainRange = terrainConfig.heightRanges[preferredTerrain];
     
-    // 適切な地形の範囲内でランダムな位置を探す
-    let attempts = 0;
-    const maxAttempts = 100;
+    // 既存のねぐら位置を取得（グローバル変数から）
+    const existingHomes = [];
+    if (typeof animalPersonalities !== 'undefined') {
+        animalPersonalities.forEach((animal, i) => {
+            if (i < index && animal.home) {
+                existingHomes.push({ 
+                    x: animal.home.x, 
+                    z: animal.home.z, 
+                    type: animal.type 
+                });
+            }
+        });
+    }
+    
+    // 動物の種類に応じた距離設定
+    const sameTypeMinDistance = 15; // 同じ種類の動物は近くに配置
+    const differentTypeMinDistance = 50; // 異なる種類の動物は離れて配置
+    const maxAttempts = 200; // 試行回数を増やす
+    
+    let attempts = 0; // attempts変数の宣言を追加
     
     while (attempts < maxAttempts) {
-        // サバンナの範囲内でランダムな位置を生成
-        const x = (Math.random() - 0.5) * 200; // -100 から 100
-        const z = (Math.random() - 0.5) * 200; // -100 から 100
+        // サバンナの範囲内でランダムな位置を生成（より広い範囲で分散）
+        const x = (Math.random() - 0.5) * 300; // -150 から 150
+        const z = (Math.random() - 0.5) * 300; // -150 から 150
         
         // 地形の高さを取得（関数が利用できない場合は0を返す）
         let height = 0;
@@ -634,36 +1404,72 @@ function findSuitableHomeLocation(animalType, index) {
             height = (terrainRange.min + terrainRange.max) / 2;
         }
         
+        // 実際の地形タイプを判定
+        let actualTerrainType = preferredTerrain;
+        for (const [terrainName, range] of Object.entries(terrainConfig.heightRanges)) {
+            if (height >= range.min && height < range.max) {
+                actualTerrainType = terrainName;
+                break;
+            }
+        }
+        
+        // 川の中は避ける
+        if (actualTerrainType === "川") {
+            attempts++;
+            continue;
+        }
+        
         // 得意な地形の範囲内かチェック
         if (height >= terrainRange.min && height < terrainRange.max) {
-            return {
-                x: x,
-                z: z,
-                terrainType: preferredTerrain,
-                height: height
-            };
+                    // 既存のねぐらとの距離をチェック（種類に応じて）
+        let tooClose = false;
+        for (const existingHome of existingHomes) {
+            const distance = Math.sqrt(
+                Math.pow(x - existingHome.x, 2) + 
+                Math.pow(z - existingHome.z, 2)
+            );
+            
+            // 同じ種類の動物は近くに、異なる種類は離れて配置
+            const minDistance = (existingHome.type === animalType) ? 
+                sameTypeMinDistance : differentTypeMinDistance;
+            
+            if (distance < minDistance) {
+                tooClose = true;
+                break;
+            }
+        }
+            
+            // 十分な距離がある場合は位置を返す
+            if (!tooClose) {
+                return {
+                    x: x,
+                    z: z,
+                    terrainType: actualTerrainType, // 実際の地形タイプを返す
+                    height: height
+                };
+            }
         }
         
         attempts++;
     }
     
-    // 適切な位置が見つからない場合は、デフォルトの位置を返す
+    // 適切な位置が見つからない場合は、デフォルトの位置を返す（距離を離して配置）
     const defaultPositions = [
-        { x: -25, z: -25 },
-        { x: -20, z: -25 },
-        { x: -25, z: -20 },
-        { x: 25, z: 25 },
-        { x: 20, z: 25 },
-        { x: 25, z: 20 },
-        { x: 0, z: 25 },
-        { x: 5, z: 25 },
-        { x: -5, z: 25 },
-        { x: 0, z: -25 },
-        { x: 5, z: -25 },
-        { x: -5, z: -25 },
-        { x: 25, z: -25 },
-        { x: 20, z: -25 },
-        { x: 25, z: -20 }
+        { x: -80, z: -80 },   // 北西
+        { x: 80, z: -80 },    // 北東
+        { x: -80, z: 80 },    // 南西
+        { x: 80, z: 80 },     // 南東
+        { x: 0, z: -90 },     // 北中央
+        { x: 0, z: 90 },      // 南中央
+        { x: -90, z: 0 },     // 西中央
+        { x: 90, z: 0 },      // 東中央
+        { x: -60, z: -60 },   // 北西（内側）
+        { x: 60, z: -60 },    // 北東（内側）
+        { x: -60, z: 60 },    // 南西（内側）
+        { x: 60, z: 60 },     // 南東（内側）
+        { x: -40, z: 0 },     // 西（内側）
+        { x: 40, z: 0 },      // 東（内側）
+        { x: 0, z: -40 }      // 北（内側）
     ];
     
     const defaultPos = defaultPositions[index % defaultPositions.length];
@@ -678,10 +1484,51 @@ function findSuitableHomeLocation(animalType, index) {
         defaultHeight = (terrainRange.min + terrainRange.max) / 2;
     }
     
+    // デフォルト位置の実際の地形タイプを判定
+    let actualTerrainType = preferredTerrain;
+    for (const [terrainName, range] of Object.entries(terrainConfig.heightRanges)) {
+        if (defaultHeight >= range.min && defaultHeight < range.max) {
+            actualTerrainType = terrainName;
+            break;
+        }
+    }
+    
+    // デフォルト位置が川の場合は、適切な地形に調整
+    if (actualTerrainType === "川") {
+        // 川から少し離れた位置に調整
+        const adjustedX = defaultPos.x + (Math.random() - 0.5) * 20;
+        const adjustedZ = defaultPos.z + (Math.random() - 0.5) * 20;
+        let adjustedHeight = 0;
+        try {
+            if (typeof getTerrainHeight === 'function') {
+                adjustedHeight = getTerrainHeight(adjustedX, adjustedZ);
+            } else {
+                adjustedHeight = (terrainRange.min + terrainRange.max) / 2;
+            }
+        } catch (error) {
+            adjustedHeight = (terrainRange.min + terrainRange.max) / 2;
+        }
+        
+        // 調整後の地形タイプを再判定
+        for (const [terrainName, range] of Object.entries(terrainConfig.heightRanges)) {
+            if (adjustedHeight >= range.min && adjustedHeight < range.max) {
+                actualTerrainType = terrainName;
+                break;
+            }
+        }
+        
+        return {
+            x: adjustedX,
+            z: adjustedZ,
+            terrainType: actualTerrainType,
+            height: adjustedHeight
+        };
+    }
+    
     return {
         x: defaultPos.x,
         z: defaultPos.z,
-        terrainType: preferredTerrain,
+        terrainType: actualTerrainType, // 実際の地形タイプを返す
         height: defaultHeight
     };
 }

@@ -238,6 +238,109 @@ button:disabled {
     box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
 }
 
+.animal-info {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 8px;
+    margin: 6px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.animal-info:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-left-color: #4CAF50;
+}
+
+.animal-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.animal-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.animal-name {
+    font-weight: bold;
+    color: #fff;
+    font-size: 13px;
+}
+
+.animal-stats {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #ccc;
+}
+
+.animal-hp, .animal-hunger, .animal-thirst {
+    padding: 2px 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.animal-location {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 4px;
+}
+
+.animal-activity {
+    font-size: 11px;
+    color: #4CAF50;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.animal-thought {
+    font-size: 10px;
+    color: #80cbc4;
+    font-style: italic;
+    background: rgba(128, 203, 196, 0.1);
+    padding: 4px;
+    border-radius: 3px;
+    border-left: 2px solid #80cbc4;
+}
+
+.animal-breeding {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0;
+    font-size: 10px;
+}
+
+.animal-age {
+    color: #9C27B0;
+    background: rgba(156, 39, 176, 0.1);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border-left: 2px solid #9C27B0;
+}
+
+.animal-gender {
+    color: #E91E63;
+    background: rgba(233, 30, 99, 0.1);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border-left: 2px solid #E91E63;
+}
+
+.animal-offspring {
+    color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border-left: 2px solid #4CAF50;
+}
+
 .agent-info-row {
     margin: 3px 0;
     font-size: 12px;
@@ -398,6 +501,16 @@ button:disabled {
 .log-relationship {
     border-left-color: #E91E63;
     color: #E91E63;
+}
+
+.log-breeding {
+    border-left-color: #FF69B4;
+    color: #FF69B4;
+}
+
+.log-birth {
+    border-left-color: #00CED1;
+    color: #00CED1;
 }
 
 .log-details-toggle {

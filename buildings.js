@@ -44,6 +44,7 @@ function createLocations() {
         addLog('🌍 デフォルト地形を作成しました', 'system');
     }
     
+    /*
     dynamicLocationData.forEach(loc => {
         const locationGroup = new THREE.Group();
         
@@ -243,71 +244,93 @@ function createLocations() {
         
         locations.push(location);
     });
+    */
 
-    // 動物の自宅を作成
+    // 動物のねぐら（自宅）を作成
     animalPersonalities.forEach(animal => {
         // homeオブジェクトが存在しない場合はスキップ
         if (!animal.home) {
             return;
         }
         
-        const homeGroup = new THREE.Group();
+        const denGroup = new THREE.Group();
         
-        // 自宅のサイズ（小サイズ）
-        const homeSize = cityLayout.buildingSizes.small;
-        const homeHeight = homeSize * 0.8;
+        // ねぐらのサイズ（より大きく目立つように）
+        const denSize = 3;
+        const denHeight = 2;
         
         // 地形の高さを取得
         const groundHeight = getTerrainHeight(animal.home.x, animal.home.z);
         
-        // 家の基本構造
-        const houseGeometry = new THREE.BoxGeometry(homeSize, homeHeight, homeSize);
-        const houseEdges = new THREE.EdgesGeometry(houseGeometry);
-        const houseMaterial = new THREE.LineBasicMaterial({ color: animal.home.color });
-        const house = new THREE.LineSegments(houseEdges, houseMaterial);
-        house.position.set(0, groundHeight + homeHeight / 2, 0);
-        homeGroup.add(house);
-
-        // 屋根
-        const roofGeometry = new THREE.ConeGeometry(homeSize * 0.7, homeSize * 0.5, 4);
-        const roofEdges = new THREE.EdgesGeometry(roofGeometry);
-        const roofMaterial = new THREE.LineBasicMaterial({ color: animal.home.color });
-        const roof = new THREE.LineSegments(roofEdges, roofMaterial);
-        roof.position.set(0, groundHeight + homeHeight + homeSize * 0.25, 0);
-        homeGroup.add(roof);
-
-        // 入り口
-        const doorGeometry = new THREE.BoxGeometry(homeSize * 0.3, homeHeight * 0.6, homeSize * 0.1);
-        const doorEdges = new THREE.EdgesGeometry(doorGeometry);
-        const doorMaterial = new THREE.LineBasicMaterial({ color: 0x8B4513 });
-        const door = new THREE.LineSegments(doorEdges, doorMaterial);
-        door.position.set(0, groundHeight + homeHeight * 0.3, homeSize * 0.45);
-        homeGroup.add(door);
-
-        // 窓
-        const windowGeometry = new THREE.BoxGeometry(homeSize * 0.2, homeSize * 0.2, homeSize * 0.1);
-        const windowEdges = new THREE.EdgesGeometry(windowGeometry);
-        const windowMaterial = new THREE.LineBasicMaterial({ color: 0x87CEEB });
-        const window = new THREE.LineSegments(windowEdges, windowMaterial);
-        window.position.set(homeSize * 0.3, groundHeight + homeHeight * 0.6, homeSize * 0.45);
-        homeGroup.add(window);
+        // 動物の種類に応じてねぐらの形状を変更
+        let denGeometry, denMaterial;
+        
+        if (animal.type === 'ライオン') {
+            // ライオンは洞穴風のねぐら
+            denGeometry = new THREE.SphereGeometry(denSize * 0.8, 8, 8);
+            denMaterial = new THREE.LineBasicMaterial({ color: 0x8B4513, linewidth: 3 });
+        } else if (animal.type === 'ゾウ') {
+            // ゾウは大きな岩風のねぐら
+            denGeometry = new THREE.DodecahedronGeometry(denSize * 0.6);
+            denMaterial = new THREE.LineBasicMaterial({ color: 0x808080, linewidth: 3 });
+        } else if (animal.type === 'キリン') {
+            // キリンは木風のねぐら
+            denGeometry = new THREE.CylinderGeometry(denSize * 0.3, denSize * 0.4, denHeight * 1.5, 8);
+            denMaterial = new THREE.LineBasicMaterial({ color: 0xFFD700, linewidth: 3 });
+        } else if (animal.type === 'シマウマ') {
+            // シマウマは草原風のねぐら
+            denGeometry = new THREE.CylinderGeometry(denSize * 0.8, denSize * 0.8, denHeight * 0.3, 8);
+            denMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 3 });
+        } else if (animal.type === 'ハイエナ') {
+            // ハイエナは洞穴風のねぐら
+            denGeometry = new THREE.SphereGeometry(denSize * 0.7, 8, 8);
+            denMaterial = new THREE.LineBasicMaterial({ color: 0x696969, linewidth: 3 });
+        } else {
+            // デフォルト
+            denGeometry = new THREE.BoxGeometry(denSize, denHeight, denSize);
+            denMaterial = new THREE.LineBasicMaterial({ color: animal.home.color, linewidth: 3 });
+        }
+        
+        const denEdges = new THREE.EdgesGeometry(denGeometry);
+        const den = new THREE.LineSegments(denEdges, denMaterial);
+        den.position.set(0, groundHeight + denHeight / 2, 0);
+        denGroup.add(den);
+        
+        // ねぐらの上に動物の名前を表示する旗
+        const flagGeometry = new THREE.PlaneGeometry(1, 0.5);
+        const flagEdges = new THREE.EdgesGeometry(flagGeometry);
+        const flagMaterial = new THREE.LineBasicMaterial({ color: 0xFF0000, linewidth: 2 });
+        const flag = new THREE.LineSegments(flagEdges, flagMaterial);
+        flag.position.set(0, groundHeight + denHeight + 1, 0);
+        flag.rotation.x = -Math.PI / 2;
+        denGroup.add(flag);
+        
+        // 旗のポール
+        const poleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 4);
+        const poleEdges = new THREE.EdgesGeometry(poleGeometry);
+        const poleMaterial = new THREE.LineBasicMaterial({ color: 0x8B4513, linewidth: 2 });
+        const pole = new THREE.LineSegments(poleEdges, poleMaterial);
+        pole.position.set(0, groundHeight + denHeight + 0.5, 0);
+        denGroup.add(pole);
 
         // 位置を設定
-        homeGroup.position.set(animal.home.x, 0, animal.home.z);
-        scene.add(homeGroup);
+        denGroup.position.set(animal.home.x, 0, animal.home.z);
+        scene.add(denGroup);
         
         // 場所オブジェクトを作成
-        const homeLocation = {
+        const denLocation = {
             name: animal.home.name,
             position: { x: animal.home.x, y: groundHeight, z: animal.home.z },
             color: animal.home.color,
             activities: ["休息", "睡眠", "家族との時間"],
             atmosphere: `${animal.name}の安全な住処`,
-            mesh: homeGroup,
-            isHome: true
+            mesh: denGroup,
+            isHome: true,
+            animalType: animal.type,
+            animalName: animal.name
         };
         
-        locations.push(homeLocation);
+        locations.push(denLocation);
     });
 }
 

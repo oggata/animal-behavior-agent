@@ -299,12 +299,25 @@ function init() {
     }
     if (facilityBtn) {
         facilityBtn.addEventListener('click', () => {
-            const facilities = locations.filter(loc => !loc.isHome);
-            if (facilities.length === 0) {
-                addLog('⚠️ 地形がまだ作成されていません', 'warning');
+            // 地形が作成されていない場合は作成
+            if (locations.length === 0) {
+                addLog('🌍 地形を作成しています...', 'system');
+                createLocations();
+            }
+            
+            // 動物が作成されていない場合は作成（ねぐらを作成するため）
+            if (agents.length === 0) {
+                addLog('🦁 動物を作成しています...', 'system');
+                createAnimals();
+            }
+            
+            // 地形とねぐらの両方を含める
+            const allLocations = locations.filter(loc => loc.mesh);
+            if (allLocations.length === 0) {
+                addLog('⚠️ 地形・ねぐらがまだ作成されていません', 'warning');
                 return;
             }
-            currentFacilityIndex = (currentFacilityIndex + 1) % facilities.length;
+            currentFacilityIndex = (currentFacilityIndex + 1) % allLocations.length;
             focusCameraOnFacilityByIndex(currentFacilityIndex);
         });
     }
@@ -460,8 +473,9 @@ function createAnimals() {
         const homeLocation = findSuitableHomeLocation(animalData.type, index);
         
         // homeオブジェクトを作成
+        const homeName = `${animalData.name}の${homeLocation.terrainType}`;
         animalData.home = {
-            name: `${animalData.name}の${animalData.type === 'ライオン' || animalData.type === 'ハイエナ' ? '洞穴' : '休息地'}`,
+            name: homeName,
             x: homeLocation.x,
             z: homeLocation.z,
             color: animalData.color,
@@ -478,7 +492,7 @@ function createAnimals() {
             // 初期行動を設定
             setTimeout(() => {
                 animal.executeDefaultAction();
-            }, 1000 + Math.random() * 2000); // 1-3秒後に行動開始
+            }, 500 + Math.random() * 1000); // 0.5-1.5秒後に行動開始
         }
     });
     
@@ -540,6 +554,30 @@ function updateEnvironment(hour) {
     });
 }
 
+// 行動アイコンを取得する関数
+function getActivityIcon(activity) {
+    switch (activity) {
+        case 'hunting':
+            return '🦁';
+        case 'escaping':
+            return '🏃';
+        case 'eating':
+            return '🍃';
+        case 'drinking':
+            return '💧';
+        case 'resting':
+            return '😴';
+        case 'routine':
+            return '📅';
+        case 'exploring':
+            return '🔍';
+        case 'hiding':
+            return '🕳️';
+        default:
+            return '🤔';
+    }
+}
+
 // 動物情報の更新
 function updateAgentInfo() {
     const agentInfoContainer = document.getElementById('agent-info');
@@ -564,14 +602,42 @@ function updateAgentInfo() {
             const hungerPercentage = (animal.hunger * 100).toFixed(0);
             const thirstPercentage = (animal.thirst * 100).toFixed(0);
             
+            // 思考と行動の情報を取得
+            const thought = animal.currentThought || '何も考えていない';
+            const activity = animal.currentActivity || '何もしていない';
+            const activityIcon = getActivityIcon(activity);
+            
+            // 群れ情報を取得
+            const herdInfo = animal.herd && animal.herd.members.length > 1 ? 
+                ` (群れ: ${animal.herd.members.length}匹)` : '';
+            
+            // 繁殖情報を取得
+            const genderIcon = animal.gender === 'male' ? '♂️' : '♀️';
+            const ageText = Math.floor(animal.age);
+            const breedingInfo = animal.isPregnant ? '🤰 妊娠中' : 
+                                animal.isAdult ? `${genderIcon} 成体` : '🐾 子供';
+            const offspringInfo = animal.offspring.length > 0 ? 
+                                `👶 子供${animal.offspring.length}匹` : '';
+            
             html += `
                 <div class="animal-info" onclick="selectAnimal('${animal.name}')">
-                    <span class="animal-status">${status}</span>
-                    <span class="animal-name">${animal.name}</span>
-                    <span class="animal-hp">HP: ${hpPercentage}%</span>
-                    <span class="animal-hunger">空腹: ${hungerPercentage}%</span>
-                    <span class="animal-thirst">喉の渇き: ${thirstPercentage}%</span>
-                    <span class="animal-location">${animal.currentLocation?.name || '不明'}</span>
+                    <div class="animal-header">
+                        <span class="animal-status">${status}</span>
+                        <span class="animal-name">${animal.name}${herdInfo}</span>
+                    </div>
+                    <div class="animal-stats">
+                        <span class="animal-hp">HP: ${hpPercentage}%</span>
+                        <span class="animal-hunger">空腹: ${hungerPercentage}%</span>
+                        <span class="animal-thirst">喉の渇き: ${thirstPercentage}%</span>
+                    </div>
+                    <div class="animal-breeding">
+                        <span class="animal-age">${ageText}歳</span>
+                        <span class="animal-gender">${breedingInfo}</span>
+                        ${offspringInfo ? `<span class="animal-offspring">${offspringInfo}</span>` : ''}
+                    </div>
+                    <div class="animal-location">📍 ${animal.currentLocation?.name || '不明'}</div>
+                    <div class="animal-activity">${activityIcon} ${activity}</div>
+                    <div class="animal-thought">💭 ${thought}</div>
                 </div>
             `;
         });
@@ -591,15 +657,38 @@ function selectAnimal(animalName) {
         const selectedAnimalInfo = document.getElementById('selected-animal-info');
         if (selectedAnimalInfo) {
             const animalInfo = animalTypes[animal.type];
+            const activityIcon = getActivityIcon(animal.currentActivity);
+            const herdInfo = animal.herd && animal.herd.members.length > 1 ? 
+                `<p><strong>群れ:</strong> ${animal.herd.members.length}匹の群れに所属 (リーダー: ${animal.herd.leader.name})</p>` : 
+                '<p><strong>群れ:</strong> 単独行動</p>';
+            
+            // 繁殖情報を追加
+            const genderIcon = animal.gender === 'male' ? '♂️' : '♀️';
+            const breedingStatus = animal.isPregnant ? '🤰 妊娠中' : 
+                                  animal.isAdult ? `${genderIcon} 成体` : '🐾 子供';
+            const offspringInfo = animal.offspring.length > 0 ? 
+                                `<p><strong>子供:</strong> ${animal.offspring.join(', ')} (${animal.offspring.length}匹)</p>` : 
+                                '<p><strong>子供:</strong> なし</p>';
+            const parentInfo = animal.parents.length > 0 ? 
+                             `<p><strong>親:</strong> ${animal.parents.join(', ')}</p>` : 
+                             '<p><strong>親:</strong> 不明</p>';
+            
             selectedAnimalInfo.innerHTML = `
                 <h3>${animal.name} (${animal.type})</h3>
-                <p><strong>年齢:</strong> ${animal.age}歳</p>
+                <p><strong>年齢:</strong> ${Math.floor(animal.age)}歳</p>
+                <p><strong>性別:</strong> ${genderIcon} ${animal.gender === 'male' ? 'オス' : 'メス'}</p>
+                <p><strong>繁殖状態:</strong> ${breedingStatus}</p>
+                ${offspringInfo}
+                ${parentInfo}
                 <p><strong>性格:</strong> ${animal.personality.description}</p>
                 <p><strong>HP:</strong> ${animal.hp}/${animal.maxHp}</p>
                 <p><strong>空腹度:</strong> ${(animal.hunger * 100).toFixed(1)}%</p>
                 <p><strong>喉の渇き:</strong> ${(animal.thirst * 100).toFixed(1)}%</p>
                 <p><strong>現在地:</strong> ${animal.currentLocation?.name || '不明'}</p>
                 <p><strong>状態:</strong> ${animal.isAlive ? '生存' : '死亡'}</p>
+                <p><strong>現在の行動:</strong> ${activityIcon} ${animal.currentActivity || '何もしていない'}</p>
+                <p><strong>現在の思考:</strong> 💭 ${animal.currentThought || '何も考えていない'}</p>
+                ${herdInfo}
                 <p><strong>説明:</strong> ${animalInfo?.description || ''}</p>
                 <p><strong>攻撃力:</strong> ${animal.attackPower}</p>
                 <p><strong>防御力:</strong> ${animal.defense}</p>
@@ -706,7 +795,12 @@ function updateCameraTargetDisplay() {
     if (cameraMode === 'agent' && targetAgent) {
         targetDisplay.textContent = `動物: ${targetAgent.name}`;
     } else if (cameraMode === 'facility' && targetFacility) {
-        targetDisplay.textContent = `地形: ${targetFacility.name}`;
+        // ねぐらの場合は特別な表示
+        if (targetFacility.isHome && targetFacility.animalName) {
+            targetDisplay.textContent = `ねぐら: ${targetFacility.animalName}の${targetFacility.name}`;
+        } else {
+            targetDisplay.textContent = `地形: ${targetFacility.name}`;
+        }
     } else {
         targetDisplay.textContent = 'フリーカメラ';
     }
@@ -777,10 +871,10 @@ function focusCameraOnAgent(agent) {
 
 // インデックスで地形にカメラをフォーカス
 function focusCameraOnFacilityByIndex(index) {
-    const facilities = locations.filter(loc => !loc.isHome);
-    if (index >= 0 && index < facilities.length) {
-        const facility = facilities[index];
-        focusCameraOnFacility(facility);
+    const allLocations = locations.filter(loc => loc.mesh);
+    if (index >= 0 && index < allLocations.length) {
+        const location = allLocations[index];
+        focusCameraOnFacility(location);
     }
 }
 
@@ -806,7 +900,12 @@ function focusCameraOnFacility(facility) {
     updateCameraTargetDisplay();
     updateCameraModeDisplay();
     
-    addLog(`📷 カメラが${facility.name}にフォーカスしました`, 'camera');
+    // ねぐらの場合は特別なメッセージを表示
+    if (facility.isHome && facility.animalName) {
+        addLog(`🏠 カメラが${facility.animalName}のねぐら（${facility.name}）にフォーカスしました`, 'camera');
+    } else {
+        addLog(`📷 カメラが${facility.name}にフォーカスしました`, 'camera');
+    }
 }
 
 // カメラリセット
