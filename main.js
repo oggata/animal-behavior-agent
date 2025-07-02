@@ -45,6 +45,14 @@ let cameraControls = {
     }
 };
 
+let lastHour = null;
+
+let cameraDistance = 40; // デフォルト距離を2倍
+const minCameraDistance = 5;
+const maxCameraDistance = 200; // 最大距離を2倍
+
+let ambientLight, directionalLight;
+
 // APIキー設定
 function setApiKey() {
     const apiKeyInput = document.getElementById('apiKey');
@@ -226,7 +234,7 @@ function init() {
     
     // 地形の高さを取得してカメラの位置を調整
     const terrainHeight = getTerrainHeight(0, 0);
-    camera.position.set(0, terrainHeight + 200, 60); // 高さと距離を増加
+    camera.position.set(0, terrainHeight + 400, 120); // 高さと距離を2倍に
     camera.lookAt(0, terrainHeight, 0); // 地形の高さを見る
     
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -236,10 +244,10 @@ function init() {
     document.getElementById('canvas-container').appendChild(renderer.domElement);
     
     // ライティング（サバンナの太陽光）
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
     directionalLight.position.set(20, 30, 10);
     directionalLight.castShadow = true;
     directionalLight.shadow.camera.left = -30;
@@ -355,6 +363,19 @@ function init() {
     
     // APIキーの検証
     validateApiKey();
+
+    const zoomInBtn = document.getElementById('cameraZoomIn');
+    const zoomOutBtn = document.getElementById('cameraZoomOut');
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => {
+            cameraDistance = Math.max(minCameraDistance, cameraDistance - 5);
+        });
+    }
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', () => {
+            cameraDistance = Math.min(maxCameraDistance, cameraDistance + 5);
+        });
+    }
 }
 
 // マウスコントロール
@@ -526,20 +547,86 @@ function updateTime() {
 
 // 環境の更新
 function updateEnvironment(hour) {
-    // 時間帯に応じた環境変化
-    if (hour >= 6 && hour < 18) {
-        // 昼間
-        scene.background = new THREE.Color(0x87CEEB); // 明るい空色
-        if (scene.fog) {
-            scene.fog.color.setHex(0x87CEEB);
-        }
-    } else {
-        // 夜間
-        scene.background = new THREE.Color(0x1a1a2e); // 暗い夜空
-        if (scene.fog) {
-            scene.fog.color.setHex(0x1a1a2e);
-        }
+    // 朝焼け・夕焼けの色を定義
+    const morningStart = 6, morningEnd = 8;
+    const eveningStart = 16, eveningEnd = 18;
+    // 色定義
+    const skyDay = 0x87CEEB; // 昼の空色
+    const skyNight = 0x1a1a2e; // 夜の空色
+    const skyMorning = 0xFFB366; // 朝焼け（オレンジ）
+    const skyMorning2 = 0xFFD1DC; // 朝焼け（ピンク）
+    const skyEvening = 0xFF6F61; // 夕焼け（赤）
+    const skyEvening2 = 0x8A2BE2; // 夕焼け（紫）
+    // 環境光・太陽光の色
+    const lightDay = 0xffffff;
+    const lightNight = 0x222244;
+    const lightMorning = 0xFFF0B3;
+    const lightEvening = 0xFFB366;
+    // グラデーション補間関数
+    function lerpColor(a, b, t) {
+        const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
+        const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+        const rr = Math.round(ar + (br - ar) * t);
+        const rg = Math.round(ag + (bg - ag) * t);
+        const rb = Math.round(ab + (bb - ab) * t);
+        return (rr << 16) | (rg << 8) | rb;
     }
+    // 朝焼け
+    if (hour >= morningStart && hour < morningEnd) {
+        const t = (hour - morningStart) / (morningEnd - morningStart);
+        const skyColor = lerpColor(skyMorning, skyMorning2, t);
+        const lightColor = lerpColor(lightMorning, lightDay, t);
+        scene.background = new THREE.Color(skyColor);
+        if (scene.fog) scene.fog.color.setHex(skyColor);
+        if (ambientLight) ambientLight.color.setHex(lightColor);
+        if (ambientLight) ambientLight.intensity = 0.5 + 0.2 * t;
+        if (directionalLight) directionalLight.color.setHex(lightColor);
+        if (directionalLight) directionalLight.intensity = 0.5 + 0.5 * t;
+        if (directionalLight) directionalLight.position.set(10 + 10 * t, 10 + 20 * t, 10);
+    }
+    // 夕焼け
+    else if (hour >= eveningStart && hour < eveningEnd) {
+        const t = (hour - eveningStart) / (eveningEnd - eveningStart);
+        const skyColor = lerpColor(skyEvening, skyEvening2, t);
+        const lightColor = lerpColor(lightEvening, lightNight, t);
+        scene.background = new THREE.Color(skyColor);
+        if (scene.fog) scene.fog.color.setHex(skyColor);
+        if (ambientLight) ambientLight.color.setHex(lightColor);
+        if (ambientLight) ambientLight.intensity = 0.5 - 0.25 * t;
+        if (directionalLight) directionalLight.color.setHex(lightColor);
+        if (directionalLight) directionalLight.intensity = 0.5 - 0.35 * t;
+        if (directionalLight) directionalLight.position.set(20 - 30 * t, 30 - 25 * t, 10);
+    }
+    // 昼
+    else if (hour >= 8 && hour < 16) {
+        scene.background = new THREE.Color(skyDay);
+        if (scene.fog) scene.fog.color.setHex(skyDay);
+        if (ambientLight) ambientLight.color.setHex(lightDay);
+        if (ambientLight) ambientLight.intensity = 0.7;
+        if (directionalLight) directionalLight.color.setHex(lightDay);
+        if (directionalLight) directionalLight.intensity = 1.0;
+        if (directionalLight) directionalLight.position.set(20, 30, 10);
+    }
+    // 夜
+    else {
+        scene.background = new THREE.Color(skyNight);
+        if (scene.fog) scene.fog.color.setHex(skyNight);
+        if (ambientLight) ambientLight.color.setHex(lightNight);
+        if (ambientLight) ambientLight.intensity = 0.25;
+        if (directionalLight) directionalLight.color.setHex(0x8888aa);
+        if (directionalLight) directionalLight.intensity = 0.15;
+        if (directionalLight) directionalLight.position.set(-10, 5, -10);
+    }
+    // 夜になった瞬間を検知
+    if (lastHour !== null && lastHour < 18 && hour >= 18) {
+        // 夜になった瞬間
+        agents.forEach(animal => {
+            if (animal.isAlive && typeof animal.goHomeAtNight === 'function') {
+                animal.goHomeAtNight();
+            }
+        });
+    }
+    lastHour = hour;
     
     // 動物の行動パターンの更新
     agents.forEach(animal => {
@@ -839,33 +926,25 @@ function focusCameraOnAgent(agent) {
     cameraMode = 'agent';
     targetAgent = agent;
     cameraFollowEnabled = true;
-    
-    // カメラを動物の位置に移動（地形の高さを考慮）
     const agentPosition = agent.mesh.position;
     const terrainHeight = getTerrainHeight(agentPosition.x, agentPosition.z);
-    
-    // より安定したカメラ位置を設定
-    const cameraOffset = new THREE.Vector3(-10, 15, 10);
+    // カメラ距離を反映
+    const offset = cameraDistance / Math.sqrt(3);
+    const cameraOffset = new THREE.Vector3(-offset, offset, offset);
     const targetPosition = new THREE.Vector3(
         agentPosition.x + cameraOffset.x,
-        Math.max(agentPosition.y + cameraOffset.y, terrainHeight + 20),
+        Math.max(agentPosition.y + cameraOffset.y, terrainHeight + cameraDistance),
         agentPosition.z + cameraOffset.z
     );
-    
-    // スムーズなカメラ移動
     camera.position.lerp(targetPosition, 0.1);
-    
-    // カメラの向きを動物に向ける
     const lookAtPosition = new THREE.Vector3(
         agentPosition.x,
-        agentPosition.y + 2, // 動物の少し上を見る
+        agentPosition.y + 2,
         agentPosition.z
     );
     camera.lookAt(lookAtPosition);
-    
     updateCameraTargetDisplay();
     updateCameraModeDisplay();
-    
     addLog(`📷 カメラが${agent.name}にフォーカスしました`, 'camera');
 }
 
@@ -885,22 +964,18 @@ function focusCameraOnFacility(facility) {
     cameraMode = 'facility';
     targetFacility = facility;
     cameraFollowEnabled = false;
-    
-    // カメラを地形の位置に移動（地形の高さを考慮）
     const facilityPosition = facility.position;
     const terrainHeight = getTerrainHeight(facilityPosition.x, facilityPosition.z);
-    
+    // カメラ距離を反映
+    const offset = cameraDistance / Math.sqrt(3);
     camera.position.set(
-        facilityPosition.x,
-        Math.max(facilityPosition.y + 15, terrainHeight + 20), // 地形の高さも考慮
-        facilityPosition.z + 12
+        facilityPosition.x + -offset,
+        Math.max(facilityPosition.y + offset, terrainHeight + cameraDistance),
+        facilityPosition.z + offset
     );
     camera.lookAt(facilityPosition.x, facilityPosition.y, facilityPosition.z);
-    
     updateCameraTargetDisplay();
     updateCameraModeDisplay();
-    
-    // ねぐらの場合は特別なメッセージを表示
     if (facility.isHome && facility.animalName) {
         addLog(`🏠 カメラが${facility.animalName}のねぐら（${facility.name}）にフォーカスしました`, 'camera');
     } else {
@@ -917,7 +992,7 @@ function resetCamera() {
     
     // 地形の高さを取得してカメラの位置を調整
     const terrainHeight = getTerrainHeight(0, 0);
-    camera.position.set(0, terrainHeight + 200, 60); // ユーザーが設定した高さに合わせる
+    camera.position.set(0, terrainHeight + 400, 120); // ユーザーが設定した高さに合わせる
     
     // カメラの回転もリセット
     camera.rotation.set(0, 0, 0);
@@ -933,30 +1008,21 @@ function updateCameraFollow() {
     if (cameraMode === 'agent' && targetAgent && cameraFollowEnabled && targetAgent.isAlive) {
         const agentPosition = targetAgent.mesh.position;
         const terrainHeight = getTerrainHeight(agentPosition.x, agentPosition.z);
-        
-        // 動物の移動速度に応じてカメラの追従速度を調整
-        const followSpeed = targetAgent.movementTarget ? 0.1 : 0.05; // 移動中は速く、停止中は遅く
-        
-        // より安定したカメラ位置を設定
-        const cameraOffset = new THREE.Vector3(-10, 15, 10);
+        const followSpeed = targetAgent.movementTarget ? 0.1 : 0.05;
+        const offset = cameraDistance / Math.sqrt(3);
+        const cameraOffset = new THREE.Vector3(-offset, offset, offset);
         const targetPosition = new THREE.Vector3(
             agentPosition.x + cameraOffset.x,
-            Math.max(agentPosition.y + cameraOffset.y, terrainHeight + 20),
+            Math.max(agentPosition.y + cameraOffset.y, terrainHeight + cameraDistance),
             agentPosition.z + cameraOffset.z
         );
-        
-        // スムーズなカメラ移動
         camera.position.lerp(targetPosition, followSpeed);
-        
-        // カメラの向きを動物に向ける
         const lookAtPosition = new THREE.Vector3(
             agentPosition.x,
-            agentPosition.y + 2, // 動物の少し上を見る
+            agentPosition.y + 2,
             agentPosition.z
         );
         camera.lookAt(lookAtPosition);
-        
-        // カメラターゲット表示を更新
         updateCameraTargetDisplay();
     }
 }

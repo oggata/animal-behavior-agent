@@ -19,17 +19,11 @@ class Animal {
         }
         
         // currentLocationの安全な初期化
-        this.currentLocation = locations.find(loc => loc.name === this.home.name);
-        if (!this.currentLocation && locations.length > 0) {
-            this.currentLocation = locations[0]; // 最初の地形をデフォルトに
-        } else if (!this.currentLocation) {
-            // locationsが空の場合のデフォルト設定
-            this.currentLocation = {
-                name: this.home.name,
-                position: new THREE.Vector3(this.home.x, 0, this.home.z),
-                type: 'grassland'
-            };
-        }
+        this.currentLocation = {
+            name: this.home.name,
+            position: new THREE.Vector3(this.home.x, 0, this.home.z),
+            type: this.home.terrainType || 'grassland'
+        };
         this.targetLocation = this.currentLocation;
         
         // HPシステム
@@ -82,8 +76,8 @@ class Animal {
         this.currentActivity = null;
         this.mood = "普通";
         this.energy = 1.0;
-        this.hunger = 0.0; // 空腹度（0-1）
-        this.thirst = 0.0; // 喉の渇き（0-1）
+        this.hunger = 0.1 + Math.random() * 0.4; // 10-50%のランダム値
+        this.thirst = 0.4 + Math.random() * 0.2; // 40-60%
         this.isThinking = false;
         
         // 戦闘・狩り関連
@@ -101,7 +95,7 @@ class Animal {
         this.thinkingDuration = 2000 + Math.random() * 3000; // 2-5秒に短縮
         
         // 初期状態で少し空腹と喉の渇きを設定して行動を促す
-        this.hunger = 0.3 + Math.random() * 0.2; // 30-50%
+        this.hunger = 0.1 + Math.random() * 0.4; // 10-50%のランダム値
         this.thirst = 0.4 + Math.random() * 0.2; // 40-60%
         
         // 3Dモデル
@@ -116,6 +110,8 @@ class Animal {
         
         // 群れを初期化
         this.initializeHerd();
+        
+        this.sharedEvents = [];
     }
     
     createModel(color) {
@@ -126,23 +122,13 @@ class Animal {
         // Characterクラスを使ってアバターを生成（動物の種類情報を渡す）
         const gameInfo = { animalType: this.type };
         this.characterInstance = new Character(scene, 'animal', gameInfo);
-        // 位置を初期化
-        if (this.currentLocation && this.currentLocation.position) {
-            // 地形の高さを取得して初期位置を設定
-            const terrainHeight = getTerrainHeight(
-                this.currentLocation.position.x, 
-                this.currentLocation.position.z
-            );
-            this.characterInstance.setPosition(
-                this.currentLocation.position.x,
-                terrainHeight + 1, // 地面から1ユニット上
-                this.currentLocation.position.z
-            );
-        } else {
-            // currentLocationがundefinedの場合のデフォルト位置
-            const terrainHeight = getTerrainHeight(0, 0);
-            this.characterInstance.setPosition(0, terrainHeight + 1, 0);
-        }
+        // 位置を初期化（必ずhomeの位置からスタート）
+        const terrainHeight = getTerrainHeight(this.home.x, this.home.z);
+        this.characterInstance.setPosition(
+            this.home.x,
+            terrainHeight + 1, // 地面から1ユニット上
+            this.home.z
+        );
         // 色を反映
         if (color) {
             this.characterInstance.setColor(color);
@@ -329,6 +315,9 @@ class Animal {
     update(deltaTime) {
         if (!this.isAlive) return;
         
+        // 共有イベントの有効期限管理（30秒）
+        this.sharedEvents = this.sharedEvents.filter(e => Date.now() - e.time < 30000);
+        
         // 基本状態の更新
         this.updateBasicNeeds(deltaTime);
         
@@ -363,12 +352,17 @@ class Animal {
         // 時間経過で基本ニーズが増加（より早く増加するように調整）
         const timeScale = deltaTime / 1000; // 秒単位に変換
         
-        // 空腹度と喉の渇きをより早く増加
-        this.hunger = Math.min(1.0, this.hunger + 0.05 * timeScale); // 0.02から0.05に増加
-        this.thirst = Math.min(1.0, this.thirst + 0.06 * timeScale); // 0.03から0.06に増加
+        // 24時間(=86400秒)で空腹度+0.5 → 0.5/86400 ≒ 0.0000058/秒
+        // 12時間(=43200秒)で喉の渇き+0.5 → 0.5/43200 ≒ 0.0000116/秒
+        this.hunger = Math.min(1.0, this.hunger + 0.0000058 * deltaTime);
+        this.thirst = Math.min(1.0, this.thirst + 0.0000116 * deltaTime);
         
-        // エネルギーは徐々に減少
-        this.energy = Math.max(0.0, this.energy - 0.01 * timeScale);
+        // エネルギーは徐々に減少。ただし休息・idle時は回復
+        if (this.currentActivity === 'resting' || this.currentActivity === 'idle') {
+            this.energy = Math.min(1.0, this.energy + 0.04 * timeScale); // 休息時は回復
+        } else {
+            this.energy = Math.max(0.0, this.energy - 0.01 * timeScale);
+        }
         
         // HPが低い場合は徐々に回復
         if (this.hp < this.maxHp && this.energy > 0.5) {
@@ -410,6 +404,11 @@ class Animal {
         // 群れの場合は群れでの移動を処理
         if (this.herd && this.herdMembers.length > 1) {
             this.updateHerdMovement(deltaTime);
+            return;
+        }
+        
+        // 休息・idle状態なら移動しない
+        if ((this.currentActivity === 'resting' || this.currentActivity === 'idle') && !this.movementTarget) {
             return;
         }
         
@@ -601,22 +600,20 @@ class Animal {
     
     updateThinking() {
         const now = Date.now();
-        
         // 逃避チェックを最優先
         if (this.shouldEscape()) {
             this.escapeFromPredator();
             return;
         }
-        
         if (!this.isThinking && now - this.lastThoughtTime > this.thinkingDuration) {
             this.think();
         }
-        
-        // 移動目標がない場合は強制的に行動を開始（狩り中は除く）
+        // 目的がない場合は休息状態にする
         if (!this.movementTarget && !this.isHunting && !this.isBeingHunted) {
-            const timeSinceLastAction = now - this.lastActionTime;
-            if (timeSinceLastAction > 3000) { // 5秒から3秒に短縮
-                this.executeDefaultAction();
+            // 休息状態でなければ休息に遷移
+            if (this.currentActivity !== 'resting' && this.currentActivity !== 'idle') {
+                this.currentActivity = 'resting';
+                this.currentThought = '何もせず休んでいます...';
                 this.lastActionTime = now;
             }
         }
@@ -946,27 +943,20 @@ class Animal {
     executeDefaultAction() {
         // デフォルト行動：状況に応じて行動を選択
         const timeOfDay = this.getTimeOfDay();
-        
         // 空腹度や喉の渇きが高い場合は対応する行動を取る
-        if (this.hunger > 0.3) { // 0.5から0.3に下げる
+        if (this.hunger > 0.3) {
             this.currentActivity = 'eating';
             this.findFood();
-        } else if (this.thirst > 0.3) { // 0.5から0.3に下げる
+        } else if (this.thirst > 0.3) {
             this.currentActivity = 'drinking';
             this.findWater();
         } else if (this.hp < this.maxHp * 0.7) {
             this.currentActivity = 'resting';
             this.rest();
         } else {
-            // それ以外は日課に従うか探索する
-            const routineLocation = this.getRoutineLocation(timeOfDay);
-            if (routineLocation) {
-                this.currentActivity = 'routine';
-                this.followRoutine();
-            } else {
-                this.currentActivity = 'exploring';
-                this.explore();
-            }
+            // 何も必要がなければ休息のみ
+            this.currentActivity = 'resting';
+            this.currentThought = '何もせず休んでいます...';
         }
     }
     
@@ -1063,6 +1053,14 @@ class Animal {
             this.currentActivity = 'resting';
             this.currentThought = '獲物を食べて満足しています...';
         }, 5000);
+        
+        // 情報共有
+        this.shareEventWithSpecies({
+            type: 'food',
+            position: prey.mesh ? prey.mesh.position.clone() : this.mesh.position.clone(),
+            time: Date.now(),
+            info: `${prey.name}の死体`
+        });
     }
     
     die(reason) {
@@ -1312,6 +1310,14 @@ class Animal {
             this.currentActivity = 'resting';
             this.currentThought = '食事を終えて満足しています...';
         }, 3000);
+        
+        // 情報共有
+        this.shareEventWithSpecies({
+            type: 'food',
+            position: this.mesh.position.clone(),
+            time: Date.now(),
+            info: '餌場'
+        });
     }
     
     restAtLocation() {
@@ -1389,7 +1395,7 @@ class Animal {
                 const farLocation = this.findFarLocation();
                 if (farLocation) {
                     this.moveToLocation(farLocation);
-                    return;
+            return;
                 }
             }
         }
@@ -1781,6 +1787,56 @@ class Animal {
                 this.characterInstance.move(moveVec, this.speed, 16); // deltaTime相当
             }
         }
+    }
+
+    // 近くの同種にイベントを伝播
+    shareEventWithSpecies(event) {
+        const neighbors = agents.filter(a =>
+            a !== this &&
+            a.type === this.type &&
+            a.isAlive &&
+            a.mesh && this.mesh &&
+            a.mesh.position.distanceTo(this.mesh.position) < 20
+        );
+        neighbors.forEach(n => {
+            n.receiveSharedEvent(event);
+        });
+    }
+
+    // 共有イベントを受信
+    receiveSharedEvent(event) {
+        // 既知のイベントは無視
+        if (this.sharedEvents.some(e => e.type === event.type && e.position.distanceTo(event.position) < 2)) return;
+        this.sharedEvents.push(event);
+        // 餌場/獲物の情報なら向かう
+        if (event.type === 'food') {
+            this.moveToLocation({
+                name: event.info,
+                position: event.position,
+                type: 'food'
+            });
+            this.currentThought = `仲間から「${event.info}」の情報を受け取ったので向かっています`;
+        }
+    }
+
+    // 夜行性かどうか判定
+    isNocturnal() {
+        // 夜行性動物の種類をここで定義
+        const nocturnalTypes = ['ハイエナ', 'ミーアキャット'];
+        return nocturnalTypes.includes(this.type);
+    }
+    // 夜になったらねぐらに戻る
+    goHomeAtNight() {
+        if (this.isNocturnal() || !this.isAlive) return;
+        if (!this.home) return;
+        // ねぐらの位置へ移動
+        this.moveToLocation({
+            name: this.home.name,
+            position: new THREE.Vector3(this.home.x, 0, this.home.z),
+            type: 'home'
+        });
+        this.currentActivity = 'resting';
+        this.currentThought = '夜なのでねぐらに戻っています...';
     }
 }
 

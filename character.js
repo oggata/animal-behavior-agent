@@ -71,11 +71,11 @@ class Character {
 		let mainMaterial, subMaterial;
 		if (this.type === 'animal' && this.game && this.game.animalType === 'シマウマ') {
 			const zebraTexture = createZebraTexture();
-			mainMaterial = new THREE.MeshStandardMaterial({ map: zebraTexture });
-			subMaterial = new THREE.MeshStandardMaterial({ map: zebraTexture });
+			mainMaterial = new THREE.MeshStandardMaterial({ map: zebraTexture, emissive: 0x000000, emissiveIntensity: 0 });
+			subMaterial = new THREE.MeshStandardMaterial({ map: zebraTexture, emissive: 0x000000, emissiveIntensity: 0 });
 		} else {
-			mainMaterial = new THREE.MeshStandardMaterial({ color: this.color || 0xffffff });
-			subMaterial = new THREE.MeshStandardMaterial({ color: this.color || 0xffffff });
+			mainMaterial = new THREE.MeshStandardMaterial({ color: this.color || 0xffffff, emissive: 0x000000, emissiveIntensity: 0 });
+			subMaterial = new THREE.MeshStandardMaterial({ color: this.color || 0xffffff, emissive: 0x000000, emissiveIntensity: 0 });
 		}
 
 		// 動物の種類に応じたサイズ調整
@@ -804,8 +804,8 @@ class Character {
 					color: upperColor,
 					shininess: 5,
 					specular: upperColor,
-					emissive: upperColor,
-					emissiveIntensity: 0.6,
+					emissive: 0x000000,
+					emissiveIntensity: 0,
 					side: THREE.DoubleSide
 				});
 				part.material.needsUpdate = true;
@@ -819,8 +819,8 @@ class Character {
 					color: lowerColor,
 					shininess: 5,
 					specular: lowerColor,
-					emissive: lowerColor,
-					emissiveIntensity: 0.6,
+					emissive: 0x000000,
+					emissiveIntensity: 0,
 					side: THREE.DoubleSide
 				});
 				part.material.needsUpdate = true;

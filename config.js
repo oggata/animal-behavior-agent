@@ -1379,16 +1379,16 @@ function findSuitableHomeLocation(animalType, index) {
     }
     
     // 動物の種類に応じた距離設定
-    const sameTypeMinDistance = 15; // 同じ種類の動物は近くに配置
-    const differentTypeMinDistance = 50; // 異なる種類の動物は離れて配置
+    const sameTypeMinDistance = 15 * 3; // 同じ種類の動物は近くに配置 → 3倍に拡大
+    const differentTypeMinDistance = 50 * 3; // 異なる種類の動物は離れて配置 → 3倍に拡大
     const maxAttempts = 200; // 試行回数を増やす
     
     let attempts = 0; // attempts変数の宣言を追加
     
     while (attempts < maxAttempts) {
         // サバンナの範囲内でランダムな位置を生成（より広い範囲で分散）
-        const x = (Math.random() - 0.5) * 300; // -150 から 150
-        const z = (Math.random() - 0.5) * 300; // -150 から 150
+        const x = (Math.random() - 0.5) * 300 * 3; // -450 から 450
+        const z = (Math.random() - 0.5) * 300 * 3; // -450 から 450
         
         // 地形の高さを取得（関数が利用できない場合は0を返す）
         let height = 0;
@@ -1455,21 +1455,21 @@ function findSuitableHomeLocation(animalType, index) {
     
     // 適切な位置が見つからない場合は、デフォルトの位置を返す（距離を離して配置）
     const defaultPositions = [
-        { x: -80, z: -80 },   // 北西
-        { x: 80, z: -80 },    // 北東
-        { x: -80, z: 80 },    // 南西
-        { x: 80, z: 80 },     // 南東
-        { x: 0, z: -90 },     // 北中央
-        { x: 0, z: 90 },      // 南中央
-        { x: -90, z: 0 },     // 西中央
-        { x: 90, z: 0 },      // 東中央
-        { x: -60, z: -60 },   // 北西（内側）
-        { x: 60, z: -60 },    // 北東（内側）
-        { x: -60, z: 60 },    // 南西（内側）
-        { x: 60, z: 60 },     // 南東（内側）
-        { x: -40, z: 0 },     // 西（内側）
-        { x: 40, z: 0 },      // 東（内側）
-        { x: 0, z: -40 }      // 北（内側）
+        { x: -80 * 3, z: -80 * 3 },   // 北西
+        { x: 80 * 3, z: -80 * 3 },    // 北東
+        { x: -80 * 3, z: 80 * 3 },    // 南西
+        { x: 80 * 3, z: 80 * 3 },     // 南東
+        { x: 0, z: -90 * 3 },         // 北中央
+        { x: 0, z: 90 * 3 },          // 南中央
+        { x: -90 * 3, z: 0 },         // 西中央
+        { x: 90 * 3, z: 0 },          // 東中央
+        { x: -60 * 3, z: -60 * 3 },   // 北西（内側）
+        { x: 60 * 3, z: -60 * 3 },    // 北東（内側）
+        { x: -60 * 3, z: 60 * 3 },    // 南西（内側）
+        { x: 60 * 3, z: 60 * 3 },     // 南東（内側）
+        { x: -40 * 3, z: 0 },         // 西（内側）
+        { x: 40 * 3, z: 0 },          // 東（内側）
+        { x: 0, z: -40 * 3 }          // 北（内側）
     ];
     
     const defaultPos = defaultPositions[index % defaultPositions.length];
